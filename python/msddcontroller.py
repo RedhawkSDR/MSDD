@@ -1834,9 +1834,13 @@ class SpectralScanModule(baseModule):
         resp = self.send_query_command("WND")
         return int(self.parseResponse(resp, 1)[0])
     def getWindowTypeString(self):
-        pos = self.getWindowType()
+        pos = self.getWindowType()-1
         rl = self.getWindowTypeList()
-        return str(rl[pos])
+        if (pos > -1 and pos < len(rl)):
+            rv = str(rl[pos])
+        else:
+            rv = ""
+        return rv
     def getWindowTypeList(self):
         resp = self.send_query_command("WNDL")
         return self.parseResponse(resp)

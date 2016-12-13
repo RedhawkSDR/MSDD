@@ -454,8 +454,9 @@ class MSDD_i(MSDD_base):
                     self.frontend_tuner_status[tuner_num].spc_stop_frequency = float(self.frontend_tuner_status[tuner_num].rx_object.spectral_scan_object.object.getMaxFrequency())
                 self.SRIchanged(tuner_num, data_port, fft_port, spc_port)
             except Exception, e:
-                self._log.error(str(e))
+                self._log.exception((e))
                 self._log.error("ERROR WHEN UPDATING TUNER STATUS FOR TUNER: "+ str(tuner_num))
+                
             
     def update_output_configuration(self, updateTunerStatus=True):
         if self.MSDD == None:
