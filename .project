@@ -1,15 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<projectDescription>
+<?xml version="1.0" encoding="UTF-8"?><projectDescription>
 	<name>MSDD</name>
 	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
-		<buildCommand>
-			<name>gov.redhawk.ide.codegen.builders.TopLevelBuildScript</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
 		<buildCommand>
 			<name>gov.redhawk.ide.codegen.jet.python.sourceinclude</name>
 			<arguments>

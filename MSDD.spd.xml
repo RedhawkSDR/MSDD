@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE softpkg PUBLIC "-//JTRS//DTD SCA V2.2.2 SPD//EN" "softpkg.dtd">
-<softpkg version="2.4.1" id="DCE:3d7435a3-f6cc-401d-8ab6-81ad2c69fe58" name="MSDD" type="sca_compliant">
-  <title/>
+<softpkg id="DCE:3d7435a3-f6cc-401d-8ab6-81ad2c69fe58" name="MSDD" type="2.0.2" version="2.4.1">
+  <title></title>
   <author>
     <name>null</name>
   </author>

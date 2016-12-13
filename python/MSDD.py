@@ -7,6 +7,15 @@
 # Redhawk IDE
 # Version:M.1.8.1
 # Build id: v201209181336
+
+# Inserted by update_project
+from ossie.cf import ExtendedCF
+from omniORB import CORBA
+import struct #@UnresolvedImport
+from bulkio.bulkioInterfaces import BULKIO, BULKIO__POA #@UnusedImport
+from bulkio.bulkio_compat import *
+# End of update_project insertions
+
 from ossie.device import start_device
 import logging
 import copy
@@ -171,8 +180,7 @@ class MSDD_i(MSDD_base):
             self.frontend_tuner_status[tuner_num].rf_flow_id = self.device_rf_flow
             
 
-    def initialize(self):
-        MSDD_base.initialize(self)
+    def constructor(self):
         
         #overload the ports to the implemented versions from the XXX_port.py files
         self.port_DigitalTuner_in = PortFRONTENDDigitalTunerIn_implemented(self, "DigitalTuner_in")

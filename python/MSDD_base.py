@@ -3,329 +3,236 @@
 # AUTO-GENERATED CODE.  DO NOT MODIFY!
 #
 # Source: MSDD.spd.xml
-# Generated on: Mon Apr 21 07:36:12 GMT-05:00 2014
-# REDHAWK IDE
-# Version: 1.8.6
-# Build id: N201401222331
-from ossie.cf import CF, CF__POA
+from ossie.cf import CF
+from ossie.cf import CF__POA
 from ossie.utils import uuid
 
-from ossie.device import Device 
+from ossie.device import Device
+from ossie.threadedcomponent import *
 from ossie.properties import simple_property
+from ossie.properties import simpleseq_property
 from ossie.properties import struct_property
 from ossie.properties import structseq_property
 
 import Queue, copy, time, threading
 from ossie.resource import usesport, providesport
-from ossie.cf import ExtendedCF
-from omniORB import CORBA
-import struct #@UnresolvedImport
-from ossie.utils import uuid
-from bulkio.bulkioInterfaces import BULKIO, BULKIO__POA #@UnusedImport 
-from redhawk.frontendInterfaces import FRONTEND, FRONTEND__POA #@UnusedImport 
+from redhawk.frontendInterfaces import FRONTEND__POA
+import bulkio
 
-NOOP = -1
-NORMAL = 0
-FINISH = 1
-class ProcessThread(threading.Thread):
-    def __init__(self, target, pause=0.0125):
-        threading.Thread.__init__(self)
-        self.setDaemon(True)
-        self.target = target
-        self.pause = pause
-        self.stop_signal = threading.Event()
-
-    def stop(self):
-        self.stop_signal.set()
-
-    def updatePause(self, pause):
-        self.pause = pause
-
-    def run(self):
-        state = NORMAL
-        while (state != FINISH) and (not self.stop_signal.isSet()):
-            state = self.target()
-            if (state == NOOP):
-                # If there was no data to process sleep to avoid spinning
-                time.sleep(self.pause)
-
-class MSDD_base(CF__POA.Device, Device):
+class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
         # These values can be altered in the __init__ of your derived class
 
         PAUSE = 0.0125 # The amount of time to sleep if process return NOOP
         TIMEOUT = 5.0 # The amount of time to wait for the process thread to die when stop() is called
         DEFAULT_QUEUE_SIZE = 100 # The number of BulkIO packets that can be in the queue before pushPacket will block
-        
+
         def __init__(self, devmgr, uuid, label, softwareProfile, compositeDevice, execparams):
             Device.__init__(self, devmgr, uuid, label, softwareProfile, compositeDevice, execparams)
-            self.threadControlLock = threading.RLock()
-            self.process_thread = None
-            # self.auto_start is deprecated and is only kept for API compatability
-            # with 1.7.X and 1.8.0 components.  This variable may be removed
+            ThreadedComponent.__init__(self)
+
+            # self.auto_start is deprecated and is only kept for API compatibility
+            # with 1.7.X and 1.8.0 devices.  This variable may be removed
             # in future releases
             self.auto_start = False
-            
-        def initialize(self):
-            Device.initialize(self)
-            
-            # Instantiate the default implementations for all ports on this component
+            # Instantiate the default implementations for all ports on this device
             self.port_DigitalTuner_in = PortFRONTENDDigitalTunerIn_i(self, "DigitalTuner_in")
             self.port_RFInfo_in = PortFRONTENDRFInfoIn_i(self, "RFInfo_in")
-
-            self.port_dataSDDS_out = PortBULKIODataSDDSOut_i(self, "dataSDDS_out")
-            self.port_dataSDDS_out_PSD = PortBULKIODataSDDSOut_i(self, "dataSDDS_out_PSD")
-            self.port_dataSDDS_out_SPC = PortBULKIODataSDDSOut_i(self, "dataSDDS_out_SPC")
-            self.port_dataVITA49_out = PortBULKIODataVITA49Out_i(self, "dataVITA49_out")
-            self.port_dataVITA49_out_PSD = PortBULKIODataVITA49Out_i(self, "dataVITA49_out_PSD")
+            self.port_dataSDDS_out = bulkio.OutSDDSPort("dataSDDS_out")
+            self.port_dataSDDS_out_PSD = bulkio.OutSDDSPort("dataSDDS_out_PSD")
+            self.port_dataSDDS_out_SPC = bulkio.OutSDDSPort("dataSDDS_out_SPC")
+            self.port_dataVITA49_out = bulkio.OutVITA49Port("dataVITA49_out")
+            self.port_dataVITA49_out_PSD = bulkio.OutVITA49Port("dataVITA49_out_PSD")
 
         def start(self):
-            self.threadControlLock.acquire()
-            try:
-                Device.start(self)
-                if self.process_thread == None:
-                    self.process_thread = ProcessThread(target=self.process, pause=self.PAUSE)
-                    self.process_thread.start()
-            finally:
-                self.threadControlLock.release()
-
-        def process(self):
-            """The process method should process a single "chunk" of data and then return.  This method will be called
-            from the processing thread again, and again, and again until it returns FINISH or stop() is called on the
-            component.  If no work is performed, then return NOOP"""
-            raise NotImplementedError
+            Device.start(self)
+            ThreadedComponent.startThread(self, pause=self.PAUSE)
 
         def stop(self):
-            self.threadControlLock.acquire()
-            try:
-                process_thread = self.process_thread
-                self.process_thread = None
-
-                if process_thread != None:
-                    process_thread.stop()
-                    process_thread.join(self.TIMEOUT)
-                    if process_thread.isAlive():
-                        raise CF.Resource.StopError(CF.CF_NOTSET, "Processing thread did not die")
-                Device.stop(self)
-            finally:
-                self.threadControlLock.release()
+            Device.stop(self)
+            if not ThreadedComponent.stopThread(self, self.TIMEOUT):
+                raise CF.Resource.StopError(CF.CF_NOTSET, "Processing thread did not die")
 
         def releaseObject(self):
             try:
                 self.stop()
             except Exception:
                 self._log.exception("Error stopping")
-            self.threadControlLock.acquire()
-            try:
-                Device.releaseObject(self)
-            finally:
-                self.threadControlLock.release()
+            Device.releaseObject(self)
 
         ######################################################################
         # PORTS
         # 
         # DO NOT ADD NEW PORTS HERE.  You can add ports in your derived class, in the SCD xml file, 
         # or via the IDE.
-        
-        def compareSRI(self, a, b):
-            if a.hversion != b.hversion:
-                return False
-            if a.xstart != b.xstart:
-                return False
-            if a.xdelta != b.xdelta:
-                return False
-            if a.xunits != b.xunits:
-                return False
-            if a.subsize != b.subsize:
-                return False
-            if a.ystart != b.ystart:
-                return False
-            if a.ydelta != b.ydelta:
-                return False
-            if a.yunits != b.yunits:
-                return False
-            if a.mode != b.mode:
-                return False
-            if a.streamID != b.streamID:
-                return False
-            if a.blocking != b.blocking:
-                return False
-            if len(a.keywords) != len(b.keywords):
-                return False
-            for keyA, keyB in zip(a.keywords, b.keywords):
-                if keyA.value._t != keyB.value._t:
-                    return False
-                if keyA.value._v != keyB.value._v:
-                    return False
-            return True
 
         # 'FRONTEND/DigitalTuner' port
         class PortFRONTENDDigitalTunerIn(FRONTEND__POA.DigitalTuner):
-            """This class is a port template for the DigitalTuner_in port and
+            """This class is a port template for the PortFRONTENDDigitalTunerIn_i port and
             should not be instantiated nor modified.
             
-            The expectation is that the specific port implementation will extend 
+            The expectation is that the specific port implementation will extend
             from this class instead of the base CORBA class FRONTEND__POA.DigitalTuner.
             """
             pass
 
         # 'FRONTEND/RFInfo' port
         class PortFRONTENDRFInfoIn(FRONTEND__POA.RFInfo):
-            """This class is a port template for the RFInfo_in port and
+            """This class is a port template for the PortFRONTENDRFInfoIn_i port and
             should not be instantiated nor modified.
             
-            The expectation is that the specific port implementation will extend 
+            The expectation is that the specific port implementation will extend
             from this class instead of the base CORBA class FRONTEND__POA.RFInfo.
-            """
-            pass
-
-
-        # 'BULKIO/dataSDDS' port
-        class PortBULKIODataSDDSOut(BULKIO__POA.UsesPortStatisticsProvider):
-            """This class is a port template for the dataSDDS_out port and
-            should not be instantiated nor modified.
-            
-            The expectation is that the specific port implementation will extend 
-            from this class instead of the base CORBA class CF__POA.Port.
-            """
-            pass
-
-
-        # 'BULKIO/dataVITA49' port
-        class PortBULKIODataVITA49Out(BULKIO__POA.UsesPortStatisticsProvider):
-            """This class is a port template for the dataVITA49_out port and
-            should not be instantiated nor modified.
-            
-            The expectation is that the specific port implementation will extend 
-            from this class instead of the base CORBA class CF__POA.Port.
             """
             pass
 
         port_DigitalTuner_in = providesport(name="DigitalTuner_in",
                                             repid="IDL:FRONTEND/DigitalTuner:1.0",
-                                            type_="control",)
+                                            type_="control")
 
         port_RFInfo_in = providesport(name="RFInfo_in",
-                                            repid="IDL:FRONTEND/RFInfo:1.0",
-                                            type_="control",)
+                                      repid="IDL:FRONTEND/RFInfo:1.0",
+                                      type_="control")
 
         port_dataSDDS_out = usesport(name="dataSDDS_out",
-                                            repid="IDL:BULKIO/dataSDDS:1.0",
-                                            type_="data",)
+                                     repid="IDL:BULKIO/dataSDDS:1.0",
+                                     type_="data")
 
         port_dataSDDS_out_PSD = usesport(name="dataSDDS_out_PSD",
-                                            repid="IDL:BULKIO/dataSDDS:1.0",
-                                            type_="control",)
+                                         repid="IDL:BULKIO/dataSDDS:1.0",
+                                         type_="data")
 
         port_dataSDDS_out_SPC = usesport(name="dataSDDS_out_SPC",
-                                            repid="IDL:BULKIO/dataSDDS:1.0",
-                                            type_="control",)
+                                         repid="IDL:BULKIO/dataSDDS:1.0",
+                                         type_="data")
 
         port_dataVITA49_out = usesport(name="dataVITA49_out",
-                                            repid="IDL:BULKIO/dataVITA49:1.0",
-                                            type_="control",)
+                                       repid="IDL:BULKIO/dataVITA49:1.0",
+                                       type_="control")
 
         port_dataVITA49_out_PSD = usesport(name="dataVITA49_out_PSD",
-                                            repid="IDL:BULKIO/dataVITA49:1.0",
-                                            type_="control",)        
+                                           repid="IDL:BULKIO/dataVITA49:1.0",
+                                           type_="control")
 
         ######################################################################
         # PROPERTIES
         # 
         # DO NOT ADD NEW PROPERTIES HERE.  You can add properties in your derived class, in the PRF xml file
-        # or by using the IDE.       
+        # or by using the IDE.
         device_kind = simple_property(id_="DCE:cdc5ee18-7ceb-4ae6-bf4c-31f983179b4d",
-                                          name="device_kind", 
-                                          type_="string",
-                                          defvalue="FRONTEND",
-                                          units="", 
-                                          mode="readonly",
-                                          action="eq",
-                                          kinds=("configure","allocation"),
-                                          description="""This specifies the device kind""" 
-                                          )       
+                                      name="device_kind",
+                                      type_="string",
+                                      defvalue="FRONTEND::TUNER",
+                                      mode="readonly",
+                                      action="eq",
+                                      kinds=("allocation","property"),
+                                      description="""This specifies the device kind""")
+
+
         device_model = simple_property(id_="DCE:0f99b2e4-9903-4631-9846-ff349d18ecfb",
-                                          name="device_model", 
-                                          type_="string",
-                                          defvalue="MSDD3000",
-                                          mode="readonly",
-                                          action="eq",
-                                          kinds=("configure","allocation"),
-                                          description="""This specifies the specific device""" 
-                                          )       
+                                       name="device_model",
+                                       type_="string",
+                                       defvalue="MSDD3000",
+                                       mode="readonly",
+                                       action="eq",
+                                       kinds=("allocation","property"),
+                                       description=""" This specifies the specific device""")
+
+
         frontend_group_id = simple_property(id_="frontend_group_id",
-                                          type_="string",
-                                          defvalue="",
-                                          mode="readwrite",
-                                          action="external",
-                                          kinds=("configure",)
-                                          )       
+                                            type_="string",
+                                            defvalue="",
+                                            mode="readwrite",
+                                            action="external",
+                                            kinds=("property",))
+
+
         clock_ref = simple_property(id_="clock_ref",
-                                          name="clock_ref", 
-                                          type_="short",
-                                          defvalue=10,
-                                          mode="readwrite",
-                                          action="external",
-                                          kinds=("configure",)
-                                          )
+                                    name="clock_ref",
+                                    type_="short",
+                                    defvalue=10,
+                                    mode="readwrite",
+                                    action="external",
+                                    kinds=("property",))
+
+
         class Advanced(object):
-            enable_msdd_advanced_debugging_tools = simple_property(id_="advanced::enable_msdd_advanced_debugging_tools",
-                                          name="enable_msdd_advanced_debugging_tools", 
-                                          type_="boolean",
-                                          defvalue=False,
-                                          )
-            allow_internal_allocations = simple_property(id_="advanced::allow_internal_allocations",
-                                          name="allow_internal_allocations", 
-                                          type_="boolean",
-                                          defvalue=True,
-                                          )
-            udp_timeout = simple_property(id_="advanced::udp_timeout",
-                                          name="udp_timeout", 
+            enable_msdd_advanced_debugging_tools = simple_property(
+                                                                   id_="advanced::enable_msdd_advanced_debugging_tools",
+                                                                   name="enable_msdd_advanced_debugging_tools",
+                                                                   type_="boolean",
+                                                                   defvalue=False
+                                                                   )
+        
+            allow_internal_allocations = simple_property(
+                                                         id_="advanced::allow_internal_allocations",
+                                                         name="allow_internal_allocations",
+                                                         type_="boolean",
+                                                         defvalue=True
+                                                         )
+        
+            udp_timeout = simple_property(
+                                          id_="advanced::udp_timeout",
+                                          name="udp_timeout",
                                           type_="double",
-                                          defvalue=1.0,
+                                          defvalue=1.0
                                           )
-            rcvr_mode = simple_property(id_="advanced::rcvr_mode",
-                                          name="rcvr_mode", 
+        
+            rcvr_mode = simple_property(
+                                        id_="advanced::rcvr_mode",
+                                        name="rcvr_mode",
+                                        type_="short",
+                                        defvalue=0
+                                        )
+        
+            wb_ddc_mode = simple_property(
+                                          id_="advanced::wb_ddc_mode",
+                                          name="wb_ddc_mode",
                                           type_="short",
-                                          defvalue=0,
+                                          defvalue=6
                                           )
-            wb_ddc_mode = simple_property(id_="advanced::wb_ddc_mode",
-                                          name="wb_ddc_mode", 
+        
+            hw_ddc_mode = simple_property(
+                                          id_="advanced::hw_ddc_mode",
+                                          name="hw_ddc_mode",
                                           type_="short",
-                                          defvalue=6,
+                                          defvalue=7
                                           )
-            hw_ddc_mode = simple_property(id_="advanced::hw_ddc_mode",
-                                          name="hw_ddc_mode", 
+        
+            sw_ddc_mode = simple_property(
+                                          id_="advanced::sw_ddc_mode",
+                                          name="sw_ddc_mode",
                                           type_="short",
-                                          defvalue=7,
+                                          defvalue=1
                                           )
-            sw_ddc_mode = simple_property(id_="advanced::sw_ddc_mode",
-                                          name="sw_ddc_mode", 
-                                          type_="short",
-                                          defvalue=1,
-                                          )
-            psd_mode = simple_property(id_="advanced::psd_mode",
-                                          name="psd_mode", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            spc_mode = simple_property(id_="advanced::spc_mode",
-                                          name="spc_mode", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            minimum_connected_nic_rate = simple_property(id_="minimum_connected_nic_rate",
-                                          type_="float",
-                                          defvalue=1000,
-                                          )
+        
+            psd_mode = simple_property(
+                                       id_="advanced::psd_mode",
+                                       name="psd_mode",
+                                       type_="short",
+                                       defvalue=0
+                                       )
+        
+            spc_mode = simple_property(
+                                       id_="advanced::spc_mode",
+                                       name="spc_mode",
+                                       type_="short",
+                                       defvalue=0
+                                       )
+        
+            minimum_connected_nic_rate = simple_property(
+                                                         id_="minimum_connected_nic_rate",
+                                                         type_="float",
+                                                         defvalue=1000.0
+                                                         )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -337,96 +244,111 @@ class MSDD_base(CF__POA.Device, Device):
                 d["hw_ddc_mode"] = self.hw_ddc_mode
                 d["sw_ddc_mode"] = self.sw_ddc_mode
                 d["psd_mode"] = self.psd_mode
+                d["spc_mode"] = self.spc_mode
                 d["minimum_connected_nic_rate"] = self.minimum_connected_nic_rate
                 return str(d)
-
-            def getId(self):
-                return "advanced"
-
-            def isStruct(self):
-                return True
-
-            def getMembers(self):
-                return [("enable_msdd_advanced_debugging_tools",self.enable_msdd_advanced_debugging_tools),("allow_internal_allocations",self.allow_internal_allocations),("udp_timeout",self.udp_timeout),("rcvr_mode",self.rcvr_mode),("wb_ddc_mode",self.wb_ddc_mode),("hw_ddc_mode",self.hw_ddc_mode),("sw_ddc_mode",self.sw_ddc_mode),("psd_mode",self.psd_mode),("minimum_connected_nic_rate",self.minimum_connected_nic_rate)]
-
         
+            @classmethod
+            def getId(cls):
+                return "advanced"
+        
+            @classmethod
+            def isStruct(cls):
+                return True
+        
+            def getMembers(self):
+                return [("enable_msdd_advanced_debugging_tools",self.enable_msdd_advanced_debugging_tools),("allow_internal_allocations",self.allow_internal_allocations),("udp_timeout",self.udp_timeout),("rcvr_mode",self.rcvr_mode),("wb_ddc_mode",self.wb_ddc_mode),("hw_ddc_mode",self.hw_ddc_mode),("sw_ddc_mode",self.sw_ddc_mode),("psd_mode",self.psd_mode),("spc_mode",self.spc_mode),("minimum_connected_nic_rate",self.minimum_connected_nic_rate)]
+
         advanced = struct_property(id_="advanced",
-                                          structdef=Advanced,
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                   structdef=Advanced,
+                                   configurationkind=("property",),
+                                   mode="readwrite")
+
+
         class MsddConfiguration(object):
-            msdd_ip_address = simple_property(id_="msdd_configuration::msdd_ip_address",
-                                          name="msdd_ip_address", 
-                                          type_="string",
-                                          defvalue="127.0.0.1",
-                                          )
-            msdd_port = simple_property(id_="msdd_configuration::msdd_port",
-                                          name="msdd_port", 
-                                          type_="string",
-                                          defvalue="23",
-                                          )
+            msdd_ip_address = simple_property(
+                                              id_="msdd_configuration::msdd_ip_address",
+                                              name="msdd_ip_address",
+                                              type_="string",
+                                              defvalue="127.0.0.1"
+                                              )
+        
+            msdd_port = simple_property(
+                                        id_="msdd_configuration::msdd_port",
+                                        name="msdd_port",
+                                        type_="string",
+                                        defvalue="23"
+                                        )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
                 d["msdd_ip_address"] = self.msdd_ip_address
                 d["msdd_port"] = self.msdd_port
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_configuration"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("msdd_ip_address",self.msdd_ip_address),("msdd_port",self.msdd_port)]
 
-        
         msdd_configuration = struct_property(id_="msdd_configuration",
-                                          structdef=MsddConfiguration,
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                             structdef=MsddConfiguration,
+                                             configurationkind=("property",),
+                                             mode="readwrite")
+
+
         class MsddTimeOfDayConfiguration(object):
-            mode = simple_property(id_="msdd_time_of_day_configuration::mode",
-                                          name="mode", 
-                                          type_="string",
-                                          defvalue="SIM",
-                                          )
-            reference_adjust = simple_property(id_="msdd_time_of_day_configuration::reference_adjust",
-                                          name="reference_adjust", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            reference_track = simple_property(id_="msdd_time_of_day_configuration::reference_track",
-                                          name="reference_track", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            toy = simple_property(id_="msdd_time_of_day_configuration::toy",
-                                          name="toy", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
+            mode = simple_property(
+                                   id_="msdd_time_of_day_configuration::mode",
+                                   name="mode",
+                                   type_="string",
+                                   defvalue="SIM"
+                                   )
+        
+            reference_adjust = simple_property(
+                                               id_="msdd_time_of_day_configuration::reference_adjust",
+                                               name="reference_adjust",
+                                               type_="short",
+                                               defvalue=0
+                                               )
+        
+            reference_track = simple_property(
+                                              id_="msdd_time_of_day_configuration::reference_track",
+                                              name="reference_track",
+                                              type_="short",
+                                              defvalue=0
+                                              )
+        
+            toy = simple_property(
+                                  id_="msdd_time_of_day_configuration::toy",
+                                  name="toy",
+                                  type_="short",
+                                  defvalue=0
+                                  )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -435,62 +357,75 @@ class MSDD_base(CF__POA.Device, Device):
                 d["reference_track"] = self.reference_track
                 d["toy"] = self.toy
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_time_of_day_configuration"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("mode",self.mode),("reference_adjust",self.reference_adjust),("reference_track",self.reference_track),("toy",self.toy)]
 
-        
         msdd_time_of_day_configuration = struct_property(id_="msdd_time_of_day_configuration",
-                                          structdef=MsddTimeOfDayConfiguration,
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                                         structdef=MsddTimeOfDayConfiguration,
+                                                         configurationkind=("property",),
+                                                         mode="readwrite")
+
+
         class MsddPsdConfiguration(object):
-            fft_size = simple_property(id_="msdd_psd_configuration::fft_size",
-                                          name="fft_size", 
-                                          type_="double",
-                                          defvalue=32768,
-                                          )
-            time_average = simple_property(id_="msdd_psd_configuration::time_average",
-                                          name="time_average", 
-                                          type_="double",
-                                          defvalue=0.10,
-                                          )
-            time_between_ffts = simple_property(id_="msdd_psd_configuration::time_between_ffts",
-                                          name="time_between_ffts", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            output_bin_size = simple_property(id_="msdd_psd_configuration::output_bin_size",
-                                          name="output_bin_size", 
-                                          type_="double",
-                                          defvalue=0,
-                                          )
-            window_type = simple_property(id_="msdd_psd_configuration::window_type",
-                                          name="window_type", 
+            fft_size = simple_property(
+                                       id_="msdd_psd_configuration::fft_size",
+                                       name="fft_size",
+                                       type_="double",
+                                       defvalue=32768.0
+                                       )
+        
+            time_average = simple_property(
+                                           id_="msdd_psd_configuration::time_average",
+                                           name="time_average",
+                                           type_="double",
+                                           defvalue=0.10000000000000001
+                                           )
+        
+            time_between_ffts = simple_property(
+                                                id_="msdd_psd_configuration::time_between_ffts",
+                                                name="time_between_ffts",
+                                                type_="double",
+                                                defvalue=0.0
+                                                )
+        
+            output_bin_size = simple_property(
+                                              id_="msdd_psd_configuration::output_bin_size",
+                                              name="output_bin_size",
+                                              type_="double",
+                                              defvalue=0.0
+                                              )
+        
+            window_type = simple_property(
+                                          id_="msdd_psd_configuration::window_type",
+                                          name="window_type",
                                           type_="string",
-                                          defvalue="HAMMING",
+                                          defvalue="HAMMING"
                                           )
-            peak_mode = simple_property(id_="msdd_psd_configuration::peak_mode",
-                                          name="peak_mode", 
-                                          type_="string",
-                                          defvalue="INST",
-                                          )
+        
+            peak_mode = simple_property(
+                                        id_="msdd_psd_configuration::peak_mode",
+                                        name="peak_mode",
+                                        type_="string",
+                                        defvalue="INST"
+                                        )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -501,73 +436,90 @@ class MSDD_base(CF__POA.Device, Device):
                 d["window_type"] = self.window_type
                 d["peak_mode"] = self.peak_mode
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_psd_configuration"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("fft_size",self.fft_size),("time_average",self.time_average),("time_between_ffts",self.time_between_ffts),("output_bin_size",self.output_bin_size),("window_type",self.window_type),("peak_mode",self.peak_mode)]
 
-        
         msdd_psd_configuration = struct_property(id_="msdd_psd_configuration",
-                                          structdef=MsddPsdConfiguration,
-                                          configurationkind=("configure",),
-                                          mode="readwrite",
-                                          description="""Currently this is global across all fft modules.This may be changed in future releases.""" 
-                                          )
+                                                 structdef=MsddPsdConfiguration,
+                                                 configurationkind=("property",),
+                                                 mode="readwrite",
+                                                 description="""Currently this is global across all fft modules.This may be changed in future releases.""")
+
+
         class MsddSpcConfiguration(object):
-            fft_size = simple_property(id_="msdd_spc_configuration::fft_size",
-                                          name="fft_size", 
-                                          type_="short",
-                                          defvalue=8192,
-                                          )
-            num_fft_averages = simple_property(id_="msdd_spc_configuration::num_fft_averages",
-                                          name="num_fft_averages", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            time_between_ffts = simple_property(id_="msdd_spc_configuration::time_between_ffts",
-                                          name="time_between_ffts", 
-                                          type_="double",
-                                          defvalue=200.0,
-                                          )
-            output_bin_size = simple_property(id_="msdd_spc_configuration::output_bin_size",
-                                          name="output_bin_size", 
-                                          type_="short",
-                                          defvalue=4096,
-                                          )
-            window_type = simple_property(id_="msdd_spc_configuration::window_type",
-                                          name="window_type", 
+            fft_size = simple_property(
+                                       id_="msdd_spc_configuration::fft_size",
+                                       name="fft_size",
+                                       type_="short",
+                                       defvalue=8192
+                                       )
+        
+            num_fft_averages = simple_property(
+                                               id_="msdd_spc_configuration::num_fft_averages",
+                                               name="num_fft_averages",
+                                               type_="short",
+                                               defvalue=0
+                                               )
+        
+            time_between_ffts = simple_property(
+                                                id_="msdd_spc_configuration::time_between_ffts",
+                                                name="time_between_ffts",
+                                                type_="double",
+                                                defvalue=200.0
+                                                )
+        
+            output_bin_size = simple_property(
+                                              id_="msdd_spc_configuration::output_bin_size",
+                                              name="output_bin_size",
+                                              type_="short",
+                                              defvalue=4096
+                                              )
+        
+            window_type = simple_property(
+                                          id_="msdd_spc_configuration::window_type",
+                                          name="window_type",
                                           type_="string",
-                                          defvalue="HAMMING",
+                                          defvalue="HAMMING"
                                           )
-            peak_mode = simple_property(id_="msdd_spc_configuration::peak_mode",
-                                          name="peak_mode", 
-                                          type_="string",
-                                          defvalue="INST",
-                                          )
-            start_frequency = simple_property(id_="msdd_spc_configuration::start_frequency",
-                                          name="start_frequency", 
-                                          type_="double",
-                                          defvalue=100000000.0,
-                                          )
-            stop_frequency = simple_property(id_="msdd_spc_configuration::stop_frequency",
-                                          name="stop_frequency", 
-                                          type_="double",
-                                          defvalue=1000000000.0,
-                                          )
+        
+            peak_mode = simple_property(
+                                        id_="msdd_spc_configuration::peak_mode",
+                                        name="peak_mode",
+                                        type_="string",
+                                        defvalue="INST"
+                                        )
+        
+            start_frequency = simple_property(
+                                              id_="msdd_spc_configuration::start_frequency",
+                                              name="start_frequency",
+                                              type_="double",
+                                              defvalue=100000000.0
+                                              )
+        
+            stop_frequency = simple_property(
+                                             id_="msdd_spc_configuration::stop_frequency",
+                                             name="stop_frequency",
+                                             type_="double",
+                                             defvalue=1000000000.0
+                                             )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -580,84 +532,104 @@ class MSDD_base(CF__POA.Device, Device):
                 d["start_frequency"] = self.start_frequency
                 d["stop_frequency"] = self.stop_frequency
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_spc_configuration"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
-                return [("fft_size",self.fft_size),("num_fft_averages",self.num_fft_averages),("time_between_ffts",self.time_between_ffts),("output_bin_size",self.output_bin_size),("window_type",self.window_type),("peak_mode",self.peak_mode), ("start_frequency", self.start_frequency), ("stop_frequency", self.stop_frequency)]
+                return [("fft_size",self.fft_size),("num_fft_averages",self.num_fft_averages),("time_between_ffts",self.time_between_ffts),("output_bin_size",self.output_bin_size),("window_type",self.window_type),("peak_mode",self.peak_mode),("start_frequency",self.start_frequency),("stop_frequency",self.stop_frequency)]
 
-        
         msdd_spc_configuration = struct_property(id_="msdd_spc_configuration",
-                                          structdef=MsddSpcConfiguration,
-                                          configurationkind=("configure",),
-                                          mode="readwrite",
-                                          description="""Currently this is global across all fft modules.This may be changed in future releases.""" 
+                                                 structdef=MsddSpcConfiguration,
+                                                 configurationkind=("property",),
+                                                 mode="readwrite",
+                                                 description="""This is for configuration of the spectral scanning.""")
+
+
+        class FrontendTunerAllocation(object):
+            tuner_type = simple_property(
+                                         id_="FRONTEND::tuner_allocation::tuner_type",
+                                         name="tuner_type",
+                                         type_="string",
+                                         defvalue=""
+                                         )
+        
+            allocation_id = simple_property(
+                                            id_="FRONTEND::tuner_allocation::allocation_id",
+                                            name="allocation_id",
+                                            type_="string",
+                                            defvalue=""
+                                            )
+        
+            center_frequency = simple_property(
+                                               id_="FRONTEND::tuner_allocation::center_frequency",
+                                               name="center_frequency",
+                                               type_="double",
+                                               defvalue=0.0
+                                               )
+        
+            bandwidth = simple_property(
+                                        id_="FRONTEND::tuner_allocation::bandwidth",
+                                        name="bandwidth",
+                                        type_="double",
+                                        defvalue=0.0
+                                        )
+        
+            bandwidth_tolerance = simple_property(
+                                                  id_="FRONTEND::tuner_allocation::bandwidth_tolerance",
+                                                  name="bandwidth_tolerance",
+                                                  type_="double",
+                                                  defvalue=10.0
+                                                  )
+        
+            sample_rate = simple_property(
+                                          id_="FRONTEND::tuner_allocation::sample_rate",
+                                          name="sample_rate",
+                                          type_="double",
+                                          defvalue=0.0
                                           )
         
-        class FrontendTunerAllocation(object):
-            tuner_type = simple_property(id_="FRONTEND::tuner_allocation::tuner_type",
-                                          name="tuner_type", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            allocation_id = simple_property(id_="FRONTEND::tuner_allocation::allocation_id",
-                                          name="allocation_id", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            center_frequency = simple_property(id_="FRONTEND::tuner_allocation::center_frequency",
-                                          name="center_frequency", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            bandwidth = simple_property(id_="FRONTEND::tuner_allocation::bandwidth",
-                                          name="bandwidth", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            bandwidth_tolerance = simple_property(id_="FRONTEND::tuner_allocation::bandwidth_tolerance",
-                                          name="bandwidth_tolerance", 
-                                          type_="double",
-                                          defvalue=10.0,
-                                          )
-            sample_rate = simple_property(id_="FRONTEND::tuner_allocation::sample_rate",
-                                          name="sample_rate", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            sample_rate_tolerance = simple_property(id_="FRONTEND::tuner_allocation::sample_rate_tolerance",
-                                          name="sample_rate_tolerance", 
-                                          type_="double",
-                                          defvalue=10.0,
-                                          )
-            device_control = simple_property(id_="FRONTEND::tuner_allocation::device_control",
-                                          name="device_control", 
-                                          type_="boolean",
-                                          defvalue=True,
-                                          )
-            group_id = simple_property(id_="FRONTEND::tuner_allocation::group_id",
-                                          name="group_id", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            rf_flow_id = simple_property(id_="FRONTEND::tuner_allocation::rf_flow_id",
-                                          name="rf_flow_id", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
+            sample_rate_tolerance = simple_property(
+                                                    id_="FRONTEND::tuner_allocation::sample_rate_tolerance",
+                                                    name="sample_rate_tolerance",
+                                                    type_="double",
+                                                    defvalue=10.0
+                                                    )
+        
+            device_control = simple_property(
+                                             id_="FRONTEND::tuner_allocation::device_control",
+                                             name="device_control",
+                                             type_="boolean",
+                                             defvalue=True
+                                             )
+        
+            group_id = simple_property(
+                                       id_="FRONTEND::tuner_allocation::group_id",
+                                       name="group_id",
+                                       type_="string",
+                                       defvalue=""
+                                       )
+        
+            rf_flow_id = simple_property(
+                                         id_="FRONTEND::tuner_allocation::rf_flow_id",
+                                         name="rf_flow_id",
+                                         type_="string",
+                                         defvalue=""
+                                         )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -672,216 +644,256 @@ class MSDD_base(CF__POA.Device, Device):
                 d["group_id"] = self.group_id
                 d["rf_flow_id"] = self.rf_flow_id
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "FRONTEND::tuner_allocation"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("tuner_type",self.tuner_type),("allocation_id",self.allocation_id),("center_frequency",self.center_frequency),("bandwidth",self.bandwidth),("bandwidth_tolerance",self.bandwidth_tolerance),("sample_rate",self.sample_rate),("sample_rate_tolerance",self.sample_rate_tolerance),("device_control",self.device_control),("group_id",self.group_id),("rf_flow_id",self.rf_flow_id)]
 
-        
         frontend_tuner_allocation = struct_property(id_="FRONTEND::tuner_allocation",
-                                          name="frontend_tuner_allocation", 
-                                          structdef=FrontendTunerAllocation,
-                                          configurationkind=("allocation",),
-                                          mode="readwrite"
-                                          )
+                                                    name="frontend_tuner_allocation",
+                                                    structdef=FrontendTunerAllocation,
+                                                    configurationkind=("allocation",),
+                                                    mode="readwrite")
+
+
         class FrontendListenerAllocation(object):
-            existing_allocation_id = simple_property(id_="FRONTEND::listener_allocation::existing_allocation_id",
-                                          name="existing_allocation_id", 
-                                          type_="string",
-                                          )
-            listener_allocation_id = simple_property(id_="FRONTEND::listener_allocation::listener_allocation_id",
-                                          name="listener_allocation_id", 
-                                          type_="string",
-                                          )
+            existing_allocation_id = simple_property(
+                                                     id_="FRONTEND::listener_allocation::existing_allocation_id",
+                                                     name="existing_allocation_id",
+                                                     type_="string")
+        
+            listener_allocation_id = simple_property(
+                                                     id_="FRONTEND::listener_allocation::listener_allocation_id",
+                                                     name="listener_allocation_id",
+                                                     type_="string")
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
                 d["existing_allocation_id"] = self.existing_allocation_id
                 d["listener_allocation_id"] = self.listener_allocation_id
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "FRONTEND::listener_allocation"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("existing_allocation_id",self.existing_allocation_id),("listener_allocation_id",self.listener_allocation_id)]
 
-        
         frontend_listener_allocation = struct_property(id_="FRONTEND::listener_allocation",
-                                          name="frontend_listener_allocation", 
-                                          structdef=FrontendListenerAllocation,
-                                          configurationkind=("allocation",),
-                                          mode="readwrite",
-                                          description="""Allocates a listener (subscriber) based off a previous allocation""" 
-                                          )
+                                                       name="frontend_listener_allocation",
+                                                       structdef=FrontendListenerAllocation,
+                                                       configurationkind=("allocation",),
+                                                       mode="readwrite",
+                                                       description="""Allocates a listener (subscriber) based off a previous allocation """)
+
+
         class MsddStatus(object):
-            connected = simple_property(id_="msdd_status::connected",
-                                          name="connected", 
-                                          type_="boolean",
-                                          defvalue=False,
-                                          )
-            ip_address = simple_property(id_="msdd_status::ip_address",
-                                          name="ip_address", 
-                                          type_="string",
-                                          )
-            port = simple_property(id_="msdd_status::port",
-                                          name="port", 
-                                          type_="string",
-                                          )
-            model = simple_property(id_="msdd_status::model",
-                                          name="model", 
-                                          type_="string",
-                                          )
-            serial = simple_property(id_="msdd_status::serial",
-                                          name="serial", 
-                                          type_="string",
-                                          )
-            software_part_number = simple_property(id_="msdd_status::software_part_number",
-                                          name="software_part_number", 
-                                          type_="string",
-                                          )
-            rf_board_type = simple_property(id_="msdd_status::rf_board_type",
-                                          name="rf_board_type", 
-                                          type_="string",
-                                          )
-            fpga_type = simple_property(id_="msdd_status::fpga_type",
-                                          name="fpga_type", 
-                                          type_="string",
-                                          )
-            dsp_type = simple_property(id_="msdd_status::dsp_type",
-                                          name="dsp_type", 
-                                          type_="string",
-                                          )
-            minimum_frequency_hz = simple_property(id_="msdd_status::minimum_frequency_hz",
-                                          name="minimum_frequency_hz", 
-                                          type_="string",
-                                          )
-            maximum_frequency_hz = simple_property(id_="msdd_status::maximum_frequency_hz",
-                                          name="maximum_frequency_hz", 
-                                          type_="string",
-                                          )
-            dsp_reference_frequency_hz = simple_property(id_="msdd_status::dsp_reference_frequency_hz",
-                                          name="dsp_reference_frequency_hz", 
-                                          type_="string",
-                                          )
-            adc_clock_frequency_hz = simple_property(id_="msdd_status::adc_clock_frequency_hz",
-                                          name="adc_clock_frequency_hz", 
-                                          type_="string",
-                                          )
-            num_if_ports = simple_property(id_="msdd_status::num_if_ports",
-                                          name="num_if_ports", 
-                                          type_="string",
-                                          )
-            num_eth_ports = simple_property(id_="msdd_status::num_eth_ports",
-                                          name="num_eth_ports", 
-                                          type_="string",
-                                          )
-            cpu_type = simple_property(id_="msdd_status::cpu_type",
-                                          name="cpu_type", 
-                                          type_="string",
-                                          )
-            cpu_rate = simple_property(id_="msdd_status::cpu_rate",
-                                          name="cpu_rate", 
-                                          type_="string",
-                                          )
-            cpu_load = simple_property(id_="msdd_status::cpu_load",
-                                          name="cpu_load", 
-                                          type_="string",
-                                          )
-            pps_termination = simple_property(id_="msdd_status::pps_termination",
-                                          name="pps_termination", 
-                                          type_="string",
-                                          )
-            pps_voltage = simple_property(id_="msdd_status::pps_voltage",
-                                          name="pps_voltage", 
-                                          type_="string",
-                                          )
-            number_wb_ddc_channels = simple_property(id_="msdd_status::number_wb_ddc_channels",
-                                          name="number_wb_ddc_channels", 
-                                          type_="string",
-                                          )
-            number_nb_ddc_channels = simple_property(id_="msdd_status::number_nb_ddc_channels",
-                                          name="number_nb_ddc_channels", 
-                                          type_="string",
-                                          )
-            filename_app = simple_property(id_="msdd_status::filename_app",
-                                          name="filename_app", 
-                                          type_="string",
-                                          )
-            filename_fpga = simple_property(id_="msdd_status::filename_fpga",
-                                          name="filename_fpga", 
-                                          type_="string",
-                                          )
-            filename_batch = simple_property(id_="msdd_status::filename_batch",
-                                          name="filename_batch", 
-                                          type_="string",
-                                          )
-            filename_boot = simple_property(id_="msdd_status::filename_boot",
-                                          name="filename_boot", 
-                                          type_="string",
-                                          )
-            filename_loader = simple_property(id_="msdd_status::filename_loader",
-                                          name="filename_loader", 
-                                          type_="string",
-                                          )
-            filename_config = simple_property(id_="msdd_status::filename_config",
-                                          name="filename_config", 
-                                          type_="string",
-                                          )
-            tod_module = simple_property(id_="msdd_status::tod_module",
-                                          name="tod_module", 
-                                          type_="string",
-                                          )
-            tod_available_module = simple_property(id_="msdd_status::tod_available_module",
-                                          name="tod_available_module", 
-                                          type_="string",
-                                          )
-            tod_meter_list = simple_property(id_="msdd_status::tod_meter_list",
-                                          name="tod_meter_list", 
-                                          type_="string",
-                                          )
-            tod_tod_reference_adjust = simple_property(id_="msdd_status::tod_reference_adjust",
-                                          name="tod_tod_reference_adjust", 
-                                          type_="string",
-                                          )
-            tod_track_mode_state = simple_property(id_="msdd_status::tod_track_mode_state",
-                                          name="tod_track_mode_state", 
-                                          type_="string",
-                                          )
-            tod_bit_state = simple_property(id_="msdd_status::tod_bit_state",
-                                          name="tod_bit_state", 
-                                          type_="string",
-                                          )
-            tod_toy = simple_property(id_="msdd_status::tod_toy",
-                                          name="tod_toy", 
-                                          type_="string",
-                                          )
+            connected = simple_property(
+                                        id_="msdd_status::connected",
+                                        name="connected",
+                                        type_="boolean",
+                                        defvalue=False
+                                        )
+        
+            ip_address = simple_property(
+                                         id_="msdd_status::ip_address",
+                                         name="ip_address",
+                                         type_="string")
+        
+            port = simple_property(
+                                   id_="msdd_status::port",
+                                   name="port",
+                                   type_="string")
+        
+            model = simple_property(
+                                    id_="msdd_status::model",
+                                    name="model",
+                                    type_="string")
+        
+            serial = simple_property(
+                                     id_="msdd_status::serial",
+                                     name="serial",
+                                     type_="string")
+        
+            software_part_number = simple_property(
+                                                   id_="msdd_status::software_part_number",
+                                                   name="software_part_number",
+                                                   type_="string")
+        
+            rf_board_type = simple_property(
+                                            id_="msdd_status::rf_board_type",
+                                            name="rf_board_type",
+                                            type_="string")
+        
+            fpga_type = simple_property(
+                                        id_="msdd_status::fpga_type",
+                                        name="fpga_type",
+                                        type_="string")
+        
+            dsp_type = simple_property(
+                                       id_="msdd_status::dsp_type",
+                                       name="dsp_type",
+                                       type_="string")
+        
+            minimum_frequency_hz = simple_property(
+                                                   id_="msdd_status::minimum_frequency_hz",
+                                                   name="minimum_frequency_hz",
+                                                   type_="string")
+        
+            maximum_frequency_hz = simple_property(
+                                                   id_="msdd_status::maximum_frequency_hz",
+                                                   name="maximum_frequency_hz",
+                                                   type_="string")
+        
+            dsp_reference_frequency_hz = simple_property(
+                                                         id_="msdd_status::dsp_reference_frequency_hz",
+                                                         name="dsp_reference_frequency_hz",
+                                                         type_="string")
+        
+            adc_clock_frequency_hz = simple_property(
+                                                     id_="msdd_status::adc_clock_frequency_hz",
+                                                     name="adc_clock_frequency_hz",
+                                                     type_="string")
+        
+            num_if_ports = simple_property(
+                                           id_="msdd_status::num_if_ports",
+                                           name="num_if_ports",
+                                           type_="string")
+        
+            num_eth_ports = simple_property(
+                                            id_="msdd_status::num_eth_ports",
+                                            name="num_eth_ports",
+                                            type_="string")
+        
+            cpu_type = simple_property(
+                                       id_="msdd_status::cpu_type",
+                                       name="cpu_type",
+                                       type_="string")
+        
+            cpu_rate = simple_property(
+                                       id_="msdd_status::cpu_rate",
+                                       name="cpu_rate",
+                                       type_="string")
+        
+            cpu_load = simple_property(
+                                       id_="msdd_status::cpu_load",
+                                       name="cpu_load",
+                                       type_="string")
+        
+            pps_termination = simple_property(
+                                              id_="msdd_status::pps_termination",
+                                              name="pps_termination",
+                                              type_="string")
+        
+            pps_voltage = simple_property(
+                                          id_="msdd_status::pps_voltage",
+                                          name="pps_voltage",
+                                          type_="string")
+        
+            number_wb_ddc_channels = simple_property(
+                                                     id_="msdd_status::number_wb_ddc_channels",
+                                                     name="number_wb_ddc_channels",
+                                                     type_="string")
+        
+            number_nb_ddc_channels = simple_property(
+                                                     id_="msdd_status::number_nb_ddc_channels",
+                                                     name="number_nb_ddc_channels",
+                                                     type_="string")
+        
+            filename_app = simple_property(
+                                           id_="msdd_status::filename_app",
+                                           name="filename_app",
+                                           type_="string")
+        
+            filename_fpga = simple_property(
+                                            id_="msdd_status::filename_fpga",
+                                            name="filename_fpga",
+                                            type_="string")
+        
+            filename_batch = simple_property(
+                                             id_="msdd_status::filename_batch",
+                                             name="filename_batch",
+                                             type_="string")
+        
+            filename_boot = simple_property(
+                                            id_="msdd_status::filename_boot",
+                                            name="filename_boot",
+                                            type_="string")
+        
+            filename_loader = simple_property(
+                                              id_="msdd_status::filename_loader",
+                                              name="filename_loader",
+                                              type_="string")
+        
+            filename_config = simple_property(
+                                              id_="msdd_status::filename_config",
+                                              name="filename_config",
+                                              type_="string")
+        
+            tod_module = simple_property(
+                                         id_="msdd_status::tod_module",
+                                         name="tod_module",
+                                         type_="string")
+        
+            tod_available_module = simple_property(
+                                                   id_="msdd_status::tod_available_module",
+                                                   name="tod_available_module",
+                                                   type_="string")
+        
+            tod_meter_list = simple_property(
+                                             id_="msdd_status::tod_meter_list",
+                                             name="tod_meter_list",
+                                             type_="string")
+        
+            tod_tod_reference_adjust = simple_property(
+                                                       id_="msdd_status::tod_reference_adjust",
+                                                       name="tod_tod_reference_adjust",
+                                                       type_="string")
+        
+            tod_track_mode_state = simple_property(
+                                                   id_="msdd_status::tod_track_mode_state",
+                                                   name="tod_track_mode_state",
+                                                   type_="string")
+        
+            tod_bit_state = simple_property(
+                                            id_="msdd_status::tod_bit_state",
+                                            name="tod_bit_state",
+                                            type_="string")
+        
+            tod_toy = simple_property(
+                                      id_="msdd_status::tod_toy",
+                                      name="tod_toy",
+                                      type_="string")
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -921,92 +933,104 @@ class MSDD_base(CF__POA.Device, Device):
                 d["tod_bit_state"] = self.tod_bit_state
                 d["tod_toy"] = self.tod_toy
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_status"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("connected",self.connected),("ip_address",self.ip_address),("port",self.port),("model",self.model),("serial",self.serial),("software_part_number",self.software_part_number),("rf_board_type",self.rf_board_type),("fpga_type",self.fpga_type),("dsp_type",self.dsp_type),("minimum_frequency_hz",self.minimum_frequency_hz),("maximum_frequency_hz",self.maximum_frequency_hz),("dsp_reference_frequency_hz",self.dsp_reference_frequency_hz),("adc_clock_frequency_hz",self.adc_clock_frequency_hz),("num_if_ports",self.num_if_ports),("num_eth_ports",self.num_eth_ports),("cpu_type",self.cpu_type),("cpu_rate",self.cpu_rate),("cpu_load",self.cpu_load),("pps_termination",self.pps_termination),("pps_voltage",self.pps_voltage),("number_wb_ddc_channels",self.number_wb_ddc_channels),("number_nb_ddc_channels",self.number_nb_ddc_channels),("filename_app",self.filename_app),("filename_fpga",self.filename_fpga),("filename_batch",self.filename_batch),("filename_boot",self.filename_boot),("filename_loader",self.filename_loader),("filename_config",self.filename_config),("tod_module",self.tod_module),("tod_available_module",self.tod_available_module),("tod_meter_list",self.tod_meter_list),("tod_tod_reference_adjust",self.tod_tod_reference_adjust),("tod_track_mode_state",self.tod_track_mode_state),("tod_bit_state",self.tod_bit_state),("tod_toy",self.tod_toy)]
 
-        
         msdd_status = struct_property(id_="msdd_status",
-                                          structdef=MsddStatus,
-                                          configurationkind=("configure",),
-                                          mode="readonly"
-                                          )
+                                      structdef=MsddStatus,
+                                      configurationkind=("property",),
+                                      mode="readonly")
+
+
         class MsddAdvancedDebuggingTools(object):
-            command = simple_property(id_="msdd_advanced_debugging_tools::command",
-                                          name="command", 
-                                          type_="string",
-                                          )
-            response = simple_property(id_="msdd_advanced_debugging_tools::response",
-                                          name="response", 
-                                          type_="string",
-                                          )
+            command = simple_property(
+                                      id_="msdd_advanced_debugging_tools::command",
+                                      name="command",
+                                      type_="string")
+        
+            response = simple_property(
+                                       id_="msdd_advanced_debugging_tools::response",
+                                       name="response",
+                                       type_="string")
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
                 d["command"] = self.command
                 d["response"] = self.response
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_advanced_debugging_tools"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("command",self.command),("response",self.response)]
 
-        
         msdd_advanced_debugging_tools = struct_property(id_="msdd_advanced_debugging_tools",
-                                          structdef=MsddAdvancedDebuggingTools,
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                                        structdef=MsddAdvancedDebuggingTools,
+                                                        configurationkind=("property",),
+                                                        mode="readwrite")
+
+
         class MsddGainConfiguration(object):
-            rcvr_gain = simple_property(id_="msdd_gain_configuration::rcvr_gain",
-                                          name="rcvr_gain", 
+            rcvr_gain = simple_property(
+                                        id_="msdd_gain_configuration::rcvr_gain",
+                                        name="rcvr_gain",
+                                        type_="float",
+                                        defvalue=0.0
+                                        )
+        
+            wb_ddc_gain = simple_property(
+                                          id_="msdd_gain_configuration::wb_ddc_gain",
+                                          name="wb_ddc_gain",
                                           type_="float",
-                                          defvalue=0,
+                                          defvalue=0.0
                                           )
-            wb_ddc_gain = simple_property(id_="msdd_gain_configuration::wb_ddc_gain",
-                                          name="wb_ddc_gain", 
+        
+            hw_ddc_gain = simple_property(
+                                          id_="msdd_gain_configuration::hw_ddc_gain",
+                                          name="hw_ddc_gain",
                                           type_="float",
-                                          defvalue=0,
+                                          defvalue=0.0
                                           )
-            hw_ddc_gain = simple_property(id_="msdd_gain_configuration::hw_ddc_gain",
-                                          name="hw_ddc_gain", 
+        
+            sw_ddc_gain = simple_property(
+                                          id_="msdd_gain_configuration::sw_ddc_gain",
+                                          name="sw_ddc_gain",
                                           type_="float",
-                                          defvalue=0,
-                                          )
-            sw_ddc_gain = simple_property(id_="msdd_gain_configuration::sw_ddc_gain",
-                                          name="sw_ddc_gain", 
-                                          type_="float",
-                                          defvalue=0,
+                                          defvalue=0.0
                                           )
         
             def __init__(self, **kw):
                 """Construct an initialized instance of this struct definition"""
-                for attrname, classattr in type(self).__dict__.items():
-                    if type(classattr) == simple_property:
+                for classattr in type(self).__dict__.itervalues():
+                    if isinstance(classattr, (simple_property, simpleseq_property)):
                         classattr.initialize(self)
                 for k,v in kw.items():
                     setattr(self,k,v)
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -1015,75 +1039,96 @@ class MSDD_base(CF__POA.Device, Device):
                 d["hw_ddc_gain"] = self.hw_ddc_gain
                 d["sw_ddc_gain"] = self.sw_ddc_gain
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_gain_configuration"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("rcvr_gain",self.rcvr_gain),("wb_ddc_gain",self.wb_ddc_gain),("hw_ddc_gain",self.hw_ddc_gain),("sw_ddc_gain",self.sw_ddc_gain)]
 
-        
         msdd_gain_configuration = struct_property(id_="msdd_gain_configuration",
-                                          structdef=MsddGainConfiguration,
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                                  structdef=MsddGainConfiguration,
+                                                  configurationkind=("property",),
+                                                  mode="readwrite")
+
+
         class MsddOutputConfigurationStruct(object):
-            tuner_number = simple_property(id_="msdd_output_configuration::tuner_number",
-                                          name="tuner_number", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            protocol = simple_property(id_="msdd_output_configuration::protocol",
-                                          name="protocol", 
-                                          type_="string",
-                                          defvalue="UDP_SDDS",
-                                          )
-            ip_address = simple_property(id_="msdd_output_configuration::ip_address",
-                                          name="ip_address", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            port = simple_property(id_="msdd_output_configuration::port",
-                                          name="port", 
-                                          type_="short",
-                                          defvalue=8800,
-                                          )
-            vlan = simple_property(id_="msdd_output_configuration::vlan",
-                                          name="vlan", 
-                                          type_="short",
-                                          defvalue=-1,
-                                          )
-            enabled = simple_property(id_="msdd_output_configuration::enabled",
-                                          name="enabled", 
+            tuner_number = simple_property(
+                                           id_="msdd_output_configuration::tuner_number",
+                                           name="tuner_number",
+                                           type_="short",
+                                           defvalue=0
+                                           )
+        
+            protocol = simple_property(
+                                       id_="msdd_output_configuration::protocol",
+                                       name="protocol",
+                                       type_="string",
+                                       defvalue="UDP_SDDS"
+                                       )
+        
+            ip_address = simple_property(
+                                         id_="msdd_output_configuration::ip_address",
+                                         name="ip_address",
+                                         type_="string",
+                                         defvalue=""
+                                         )
+        
+            port = simple_property(
+                                   id_="msdd_output_configuration::port",
+                                   name="port",
+                                   type_="short",
+                                   defvalue=8800
+                                   )
+        
+            vlan = simple_property(
+                                   id_="msdd_output_configuration::vlan",
+                                   name="vlan",
+                                   type_="short",
+                                   defvalue=-1
+                                   )
+        
+            enabled = simple_property(
+                                      id_="msdd_output_configuration::enabled",
+                                      name="enabled",
+                                      type_="boolean",
+                                      defvalue=True
+                                      )
+        
+            timestamp_offset = simple_property(
+                                               id_="msdd_output_configuration::timestamp_offset",
+                                               name="timestamp_offset",
+                                               type_="short",
+                                               defvalue=0
+                                               )
+        
+            endianess = simple_property(
+                                        id_="msdd_output_configuration::endianess",
+                                        name="endianess",
+                                        type_="short",
+                                        defvalue=1
+                                        )
+        
+            mfp_flush = simple_property(
+                                        id_="msdd_output_configuration::mfp_flush",
+                                        name="mfp_flush",
+                                        type_="long",
+                                        defvalue=63
+                                        )
+        
+            vlan_enable = simple_property(
+                                          id_="msdd_output_configuration::vlan_enable",
+                                          name="vlan_enable",
                                           type_="boolean",
-                                          defvalue=True,
-                                          )
-            timestamp_offset = simple_property(id_="msdd_output_configuration::timestamp_offset",
-                                          name="timestamp_offset", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            endianess = simple_property(id_="msdd_output_configuration::endianess",
-                                          name="endianess", 
-                                          type_="short",
-                                          defvalue=1,
-                                          )
-            mfp_flush = simple_property(id_="msdd_output_configuration::mfp_flush",
-                                          name="mfp_flush", 
-                                          type_="long",
-                                          defvalue=63,
-                                          )
-            vlan_enable = simple_property(id_="msdd_output_configuration::vlan_enable",
-                                          name="vlan_enable", 
-                                          type_="boolean",
-                                          defvalue=True,
+                                          defvalue=True
                                           )
         
-            def __init__(self, tuner_number=0, protocol="", ip_address="", port=0, vlan=0, enabled=False, timestamp_offset=0, endianess=0, mfp_flush=0, vlan_enable=False):
+            def __init__(self, tuner_number=0, protocol="UDP_SDDS", ip_address="", port=8800, vlan=-1, enabled=True, timestamp_offset=0, endianess=1, mfp_flush=63, vlan_enable=True):
                 self.tuner_number = tuner_number
                 self.protocol = protocol
                 self.ip_address = ip_address
@@ -1094,7 +1139,7 @@ class MSDD_base(CF__POA.Device, Device):
                 self.endianess = endianess
                 self.mfp_flush = mfp_flush
                 self.vlan_enable = vlan_enable
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -1109,96 +1154,125 @@ class MSDD_base(CF__POA.Device, Device):
                 d["mfp_flush"] = self.mfp_flush
                 d["vlan_enable"] = self.vlan_enable
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_output_configuration_struct"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("tuner_number",self.tuner_number),("protocol",self.protocol),("ip_address",self.ip_address),("port",self.port),("vlan",self.vlan),("enabled",self.enabled),("timestamp_offset",self.timestamp_offset),("endianess",self.endianess),("mfp_flush",self.mfp_flush),("vlan_enable",self.vlan_enable)]
 
-                
         msdd_output_configuration = structseq_property(id_="msdd_output_configuration",
-                                          structdef=MsddOutputConfigurationStruct,                          
-                                          defvalue=[],
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                                       structdef=MsddOutputConfigurationStruct,
+                                                       defvalue=[],
+                                                       configurationkind=("property",),
+                                                       mode="readwrite")
+
+
         class MsddBlockOutputConfigurationStruct(object):
-            tuner_number_start = simple_property(id_="msdd_block_output_configuration::tuner_number_start",
-                                          name="tuner_number_start", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            tuner_number_stop = simple_property(id_="msdd_block_output_configuration::tuner_number_stop",
-                                          name="tuner_number_stop", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            protocol = simple_property(id_="msdd_block_output_configuration::protocol",
-                                          name="protocol", 
-                                          type_="string",
-                                          defvalue="UDP_SDDS",
-                                          )
-            ip_address = simple_property(id_="msdd_block_output_configuration::ip_address",
-                                          name="ip_address", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            increment_ip_address = simple_property(id_="msdd_block_output_configuration::increment_ip_address",
-                                          name="increment_ip_address", 
+            tuner_number_start = simple_property(
+                                                 id_="msdd_block_output_configuration::tuner_number_start",
+                                                 name="tuner_number_start",
+                                                 type_="short",
+                                                 defvalue=0
+                                                 )
+        
+            tuner_number_stop = simple_property(
+                                                id_="msdd_block_output_configuration::tuner_number_stop",
+                                                name="tuner_number_stop",
+                                                type_="short",
+                                                defvalue=0
+                                                )
+        
+            protocol = simple_property(
+                                       id_="msdd_block_output_configuration::protocol",
+                                       name="protocol",
+                                       type_="string",
+                                       defvalue="UDP_SDDS"
+                                       )
+        
+            ip_address = simple_property(
+                                         id_="msdd_block_output_configuration::ip_address",
+                                         name="ip_address",
+                                         type_="string",
+                                         defvalue=""
+                                         )
+        
+            increment_ip_address = simple_property(
+                                                   id_="msdd_block_output_configuration::increment_ip_address",
+                                                   name="increment_ip_address",
+                                                   type_="boolean",
+                                                   defvalue=False
+                                                   )
+        
+            port = simple_property(
+                                   id_="msdd_block_output_configuration::port",
+                                   name="port",
+                                   type_="short",
+                                   defvalue=8800
+                                   )
+        
+            increment_port = simple_property(
+                                             id_="msdd_block_output_configuration::increment_port",
+                                             name="increment_port",
+                                             type_="boolean",
+                                             defvalue=True
+                                             )
+        
+            vlan = simple_property(
+                                   id_="msdd_block_output_configuration::vlan",
+                                   name="vlan",
+                                   type_="short",
+                                   defvalue=-1
+                                   )
+        
+            increment_vlan = simple_property(
+                                             id_="msdd_block_output_configuration::increment_vlan",
+                                             name="increment_vlan",
+                                             type_="boolean",
+                                             defvalue=False
+                                             )
+        
+            enabled = simple_property(
+                                      id_="msdd_block_output_configuration::enabled",
+                                      name="enabled",
+                                      type_="boolean",
+                                      defvalue=True
+                                      )
+        
+            timestamp_offset = simple_property(
+                                               id_="msdd_block_output_configuration::timestamp_offset",
+                                               name="timestamp_offset",
+                                               type_="short",
+                                               defvalue=0
+                                               )
+        
+            endianess = simple_property(
+                                        id_="msdd_block_output_configuration::endianess",
+                                        name="endianess",
+                                        type_="short",
+                                        defvalue=1
+                                        )
+        
+            mfp_flush = simple_property(
+                                        id_="msdd_block_output_configuration:mfp_flush",
+                                        name="mfp_flush",
+                                        type_="long",
+                                        defvalue=63
+                                        )
+        
+            vlan_enable = simple_property(
+                                          id_="msdd_block_output_configuration:vlan_enable",
+                                          name="vlan_enable",
                                           type_="boolean",
-                                          defvalue=False,
-                                          )
-            port = simple_property(id_="msdd_block_output_configuration::port",
-                                          name="port", 
-                                          type_="short",
-                                          defvalue=8800,
-                                          )
-            increment_port = simple_property(id_="msdd_block_output_configuration::increment_port",
-                                          name="increment_port", 
-                                          type_="boolean",
-                                          defvalue=True,
-                                          )
-            vlan = simple_property(id_="msdd_block_output_configuration::vlan",
-                                          name="vlan", 
-                                          type_="short",
-                                          defvalue=-1,
-                                          )
-            increment_vlan = simple_property(id_="msdd_block_output_configuration::increment_vlan",
-                                          name="increment_vlan", 
-                                          type_="boolean",
-                                          defvalue=False,
-                                          )
-            enabled = simple_property(id_="msdd_block_output_configuration::enabled",
-                                          name="enabled", 
-                                          type_="boolean",
-                                          defvalue=True,
-                                          )
-            timestamp_offset = simple_property(id_="msdd_block_output_configuration::timestamp_offset",
-                                          name="timestamp_offset", 
-                                          type_="short",
-                                          defvalue=0,
-                                          )
-            endianess = simple_property(id_="msdd_block_output_configuration::endianess",
-                                          name="endianess", 
-                                          type_="short",
-                                          defvalue=1,
-                                          )
-            mfp_flush = simple_property(id_="msdd_block_output_configuration:mfp_flush",
-                                          name="mfp_flush", 
-                                          type_="long",
-                                          defvalue=63,
-                                          )
-            vlan_enable = simple_property(id_="msdd_block_output_configuration:vlan_enable",
-                                          name="vlan_enable", 
-                                          type_="boolean",
-                                          defvalue=True,
+                                          defvalue=True
                                           )
         
-            def __init__(self, tuner_number_start=0, tuner_number_stop=0, protocol="", ip_address="", increment_ip_address=False, port=0, increment_port=False, vlan=0, increment_vlan=False, enabled=False, timestamp_offset=0, endianess=0, mfp_flush=0, vlan_enable=False):
+            def __init__(self, tuner_number_start=0, tuner_number_stop=0, protocol="UDP_SDDS", ip_address="", increment_ip_address=False, port=8800, increment_port=True, vlan=-1, increment_vlan=False, enabled=True, timestamp_offset=0, endianess=1, mfp_flush=63, vlan_enable=True):
                 self.tuner_number_start = tuner_number_start
                 self.tuner_number_stop = tuner_number_stop
                 self.protocol = protocol
@@ -1213,7 +1287,7 @@ class MSDD_base(CF__POA.Device, Device):
                 self.endianess = endianess
                 self.mfp_flush = mfp_flush
                 self.vlan_enable = vlan_enable
-
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -1232,254 +1306,326 @@ class MSDD_base(CF__POA.Device, Device):
                 d["mfp_flush"] = self.mfp_flush
                 d["vlan_enable"] = self.vlan_enable
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "msdd_block_output_configuration_struct"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
                 return [("tuner_number_start",self.tuner_number_start),("tuner_number_stop",self.tuner_number_stop),("protocol",self.protocol),("ip_address",self.ip_address),("increment_ip_address",self.increment_ip_address),("port",self.port),("increment_port",self.increment_port),("vlan",self.vlan),("increment_vlan",self.increment_vlan),("enabled",self.enabled),("timestamp_offset",self.timestamp_offset),("endianess",self.endianess),("mfp_flush",self.mfp_flush),("vlan_enable",self.vlan_enable)]
 
-                
         msdd_block_output_configuration = structseq_property(id_="msdd_block_output_configuration",
-                                          structdef=MsddBlockOutputConfigurationStruct,                          
-                                          defvalue=[],
-                                          configurationkind=("configure",),
-                                          mode="readwrite"
-                                          )
+                                                             structdef=MsddBlockOutputConfigurationStruct,
+                                                             defvalue=[],
+                                                             configurationkind=("property",),
+                                                             mode="readwrite")
+
+
         class FrontendTunerStatusStruct(object):
-            tuner_type = simple_property(id_="FRONTEND::tuner_status::tuner_type",
-                                          name="tuner_type", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            available_tuner_type = simple_property(id_="FRONTEND::tuner_status::available_tuner_type",
-                                          name="available_tuner_type", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            allocation_id_csv = simple_property(id_="FRONTEND::tuner_status::allocation_id_csv",
-                                          name="allocation_id_csv", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            center_frequency = simple_property(id_="FRONTEND::tuner_status::center_frequency",
-                                          name="center_frequency", 
+            tuner_type = simple_property(
+                                         id_="FRONTEND::tuner_status::tuner_type",
+                                         name="tuner_type",
+                                         type_="string",
+                                         defvalue=""
+                                         )
+        
+            available_tuner_type = simple_property(
+                                                   id_="FRONTEND::tuner_status::available_tuner_type",
+                                                   name="available_tuner_type",
+                                                   type_="string",
+                                                   defvalue=""
+                                                   )
+        
+            allocation_id_csv = simple_property(
+                                                id_="FRONTEND::tuner_status::allocation_id_csv",
+                                                name="allocation_id_csv",
+                                                type_="string",
+                                                defvalue=""
+                                                )
+        
+            center_frequency = simple_property(
+                                               id_="FRONTEND::tuner_status::center_frequency",
+                                               name="center_frequency",
+                                               type_="double",
+                                               defvalue=0.0
+                                               )
+        
+            bandwidth = simple_property(
+                                        id_="FRONTEND::tuner_status::bandwidth",
+                                        name="bandwidth",
+                                        type_="double",
+                                        defvalue=0.0
+                                        )
+        
+            sample_rate = simple_property(
+                                          id_="FRONTEND::tuner_status::sample_rate",
+                                          name="sample_rate",
                                           type_="double",
-                                          defvalue=0.0,
+                                          defvalue=0.0
                                           )
-            bandwidth = simple_property(id_="FRONTEND::tuner_status::bandwidth",
-                                          name="bandwidth", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            sample_rate = simple_property(id_="FRONTEND::tuner_status::sample_rate",
-                                          name="sample_rate", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            group_id = simple_property(id_="FRONTEND::tuner_status::group_id",
-                                          name="group_id", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            rf_flow_id = simple_property(id_="FRONTEND::tuner_status::rf_flow_id",
-                                          name="rf_flow_id", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            enabled = simple_property(id_="FRONTEND::tuner_status::enabled",
-                                          name="enabled", 
-                                          type_="boolean",
-                                          defvalue=False,
-                                          )
-            complex = simple_property(id_="FRONTEND::tuner_status::complex",
-                                          name="complex", 
-                                          type_="boolean",
-                                          defvalue=False,
-                                          )
-            gain = simple_property(id_="FRONTEND::tuner_status::gain",
-                                          name="gain", 
-                                          type_="double",
-                                          defvalue=0.0,
-                                          )
-            available_frequency = simple_property(id_="FRONTEND::tuner_status::available_frequency",
-                                          name="available_frequency", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            available_gain = simple_property(id_="FRONTEND::tuner_status::available_gain",
-                                          name="available_gain", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            available_sample_rate = simple_property(id_="FRONTEND::tuner_status::available_sample_rate",
-                                          name="available_sample_rate", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            available_bandwidth = simple_property(id_="FRONTEND::tuner_status::available_bandwidth",
-                                          name="available_bandwidth", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            decimation = simple_property(id_="FRONTEND::tuner_status::decimation",
-                                          name="decimation", 
-                                          type_="short",
-                                          )
-            available_decimation = simple_property(id_="FRONTEND::tuner_status::available_decimation",
-                                          name="available_decimation", 
-                                          type_="string",
-                                          defvalue="",
-                                          )
-            tuner_number = simple_property(id_="FRONTEND::tuner_status::tuner_number",
-                                          name="tuner_number", 
-                                          type_="short",
-                                          )
-            msdd_channel_type = simple_property(id_="FRONTEND::tuner_status::msdd_channel_type",
-                                          name="msdd_channel_type", 
-                                          type_="string",
-                                          )
-            msdd_installation_name_csv = simple_property(id_="FRONTEND::tuner_status::msdd_installation_name_csv",
-                                          name="msdd_installation_name_csv", 
-                                          type_="string",
-                                          )
-            msdd_registration_name_csv = simple_property(id_="FRONTEND::tuner_status::msdd_registration_name_csv",
-                                          name="msdd_registration_name_csv", 
-                                          type_="string",
-                                          )
-            bits_per_sample = simple_property(id_="FRONTEND::tuner_status::bits_per_sample",
-                                          name="bits_per_sample", 
-                                          type_="short",
-                                          )
-            adc_meter_values = simple_property(id_="FRONTEND::tuner_status::adc_meter_values",
-                                          name="adc_meter_values", 
-                                          type_="string",
-                                          )
-            rcvr_gain = simple_property(id_="FRONTEND::tuner_status::rcvr_gain",
-                                          name="rcvr_gain", 
-                                          type_="float",
-                                          )
-            ddc_gain = simple_property(id_="FRONTEND::tuner_status::ddc_gain",
-                                          name="ddc_gain", 
-                                          type_="float",
-                                          )
-            allocated = simple_property(id_="FRONTEND::tuner_status::allocated",
-                                          name="allocated", 
-                                          type_="boolean",
-                                          )
-            input_sample_rate = simple_property(id_="FRONTEND::tuner_status::input_sample_rate",
-                                          name="input_sample_rate", 
-                                          type_="double",
-                                          )
-            output_format = simple_property(id_="FRONTEND::tuner_status::output_format",
-                                          name="output_format", 
-                                          type_="string",
-                                          )
-            output_ip_address = simple_property(id_="FRONTEND::tuner_status::output_ip_address",
-                                          name="output_ip_address", 
-                                          type_="string",
-                                          )
-            output_port = simple_property(id_="FRONTEND::tuner_status::output_port",
-                                          name="output_port", 
-                                          type_="long",
-                                          )
-            output_channel = simple_property(id_="FRONTEND::tuner_status::output_channel",
-                                          name="output_channel", 
-                                          type_="string",
-                                          )
-            output_enabled = simple_property(id_="FRONTEND::tuner_status::output_enabled",
-                                          name="output_enabled", 
-                                          type_="boolean",
-                                          )
-            output_protocol = simple_property(id_="FRONTEND::tuner_status::output_protocol",
-                                          name="output_protocol", 
-                                          type_="string",
-                                          )
-            output_vlan_enabled = simple_property(id_="FRONTEND::tuner_status::output_vlan_enabled",
-                                          name="output_vlan_enabled", 
-                                          type_="boolean",
-                                          )
-            output_vlan_tci = simple_property(id_="FRONTEND::tuner_status::output_vlan_tci",
-                                          name="output_vlan_tci", 
-                                          type_="string",
-                                          )
-            output_flow = simple_property(id_="FRONTEND::tuner_status::output_flow",
-                                          name="output_flow", 
-                                          type_="string",
-                                          )
-            output_timestamp_offset = simple_property(id_="FRONTEND::tuner_status::output_timestamp_offset",
-                                          name="output_timestamp_offset", 
-                                          type_="string",
-                                          )
-            output_endianess = simple_property(id_="FRONTEND::tuner_status::output_endianess",
-                                          name="output_endianess", 
-                                          type_="short",
-                                          defvalue=1,
-                                          )
-            output_mfp_flush = simple_property(id_="FRONTEND::tuner_status::output_mfp_flush",
-                                          name="output_mfp_flush", 
-                                          type_="long",
-                                          )
-            psd_fft_size = simple_property(id_="FRONTEND::tuner_status::psd_fft_size",
-                                          name="psd_fft_size", 
-                                          type_="double",
-                                          )
-            psd_averages = simple_property(id_="FRONTEND::tuner_status::psd_averages",
-                                          name="psd_averages", 
-                                          type_="double",
-                                          )
-            psd_time_between_ffts = simple_property(id_="FRONTEND::tuner_status::psd_time_between_ffts",
-                                          name="psd_time_between_ffts", 
-                                          type_="double",
-                                          )
-            psd_output_bin_size = simple_property(id_="FRONTEND::tuner_status::psd_output_bin_size",
-                                          name="psd_output_bin_size", 
-                                          type_="double",
-                                          )
-            psd_window_type = simple_property(id_="FRONTEND::tuner_status::psd_window_type",
-                                          name="psd_window_type", 
-                                          type_="string",
-                                          )
-            psd_peak_mode = simple_property(id_="FRONTEND::tuner_status::psd_peak_mode",
-                                          name="psd_peak_mode", 
-                                          type_="string",
-                                          )
-            spc_fft_size = simple_property(id_="FRONTEND::tuner_status::spc_fft_size",
-                                          name="spc_fft_size", 
-                                          type_="short",
-                                          )
-            spc_averages = simple_property(id_="FRONTEND::tuner_status::spc_averages",
-                                          name="spc_averages", 
-                                          type_="short",
-                                          )
-            spc_time_between_ffts = simple_property(id_="FRONTEND::tuner_status::spc_time_between_ffts",
-                                          name="spc_time_between_ffts", 
-                                          type_="double",
-                                          )
-            spc_output_bin_size = simple_property(id_="FRONTEND::tuner_status::spc_output_bin_size",
-                                          name="spc_output_bin_size", 
-                                          type_="short",
-                                          )
-            spc_window_type = simple_property(id_="FRONTEND::tuner_status::spc_window_type",
-                                          name="spc_window_type", 
-                                          type_="string",
-                                          )
-            spc_peak_mode = simple_property(id_="FRONTEND::tuner_status::spc_peak_mode",
-                                          name="spc_peak_mode", 
-                                          type_="string",
-                                          )
-            spc_start_frequency = simple_property(id_="FRONTEND::tuner_status::spc_start_frequency",
-                                          name="spc_start_frequency", 
-                                          type_="double",
-                                          )
-            spc_stop_frequency = simple_property(id_="FRONTEND::tuner_status::spc_stop_frequency",
-                                          name="spc_stop_frequency", 
-                                          type_="double",
-                                          )
-            def __init__(self, tuner_type="", available_tuner_type="", allocation_id_csv="", center_frequency=0, bandwidth=0, sample_rate=0, group_id="", rf_flow_id="", enabled=False, complex=False, gain=0, available_frequency="", available_gain="", available_sample_rate="", available_bandwidth="", decimation=0, available_decimation="", tuner_number=0, msdd_channel_type="", msdd_installation_name_csv="", msdd_registration_name_csv="", bits_per_sample=0, adc_meter_values="", rcvr_gain=0, ddc_gain=0, allocated=False, input_sample_rate=0, output_format="", output_ip_address="", output_port=0, output_channel="", output_enabled=False, output_protocol="", output_vlan_enabled=False, output_vlan_tci="", output_flow="", output_timestamp_offset="", output_endianess=0, output_mfp_flush=0, psd_fft_size=0, psd_averages=0, psd_time_between_ffts=0, psd_output_bin_size=0, psd_window_type="", psd_peak_mode="", spc_fft_size=0, spc_averages=0, spc_time_between_ffts=0.0, spc_output_bin_size=0, spc_window_type="", spc_peak_mode="",spc_start_frequency=0.0, spc_stop_frequency=0.0):
+        
+            group_id = simple_property(
+                                       id_="FRONTEND::tuner_status::group_id",
+                                       name="group_id",
+                                       type_="string",
+                                       defvalue=""
+                                       )
+        
+            rf_flow_id = simple_property(
+                                         id_="FRONTEND::tuner_status::rf_flow_id",
+                                         name="rf_flow_id",
+                                         type_="string",
+                                         defvalue=""
+                                         )
+        
+            enabled = simple_property(
+                                      id_="FRONTEND::tuner_status::enabled",
+                                      name="enabled",
+                                      type_="boolean",
+                                      defvalue=False
+                                      )
+        
+            complex = simple_property(
+                                      id_="FRONTEND::tuner_status::complex",
+                                      name="complex",
+                                      type_="boolean",
+                                      defvalue=False
+                                      )
+        
+            gain = simple_property(
+                                   id_="FRONTEND::tuner_status::gain",
+                                   name="gain",
+                                   type_="double",
+                                   defvalue=0.0
+                                   )
+        
+            available_frequency = simple_property(
+                                                  id_="FRONTEND::tuner_status::available_frequency",
+                                                  name="available_frequency",
+                                                  type_="string",
+                                                  defvalue=""
+                                                  )
+        
+            available_gain = simple_property(
+                                             id_="FRONTEND::tuner_status::available_gain",
+                                             name="available_gain",
+                                             type_="string",
+                                             defvalue=""
+                                             )
+        
+            available_sample_rate = simple_property(
+                                                    id_="FRONTEND::tuner_status::available_sample_rate",
+                                                    name="available_sample_rate",
+                                                    type_="string",
+                                                    defvalue=""
+                                                    )
+        
+            available_bandwidth = simple_property(
+                                                  id_="FRONTEND::tuner_status::available_bandwidth",
+                                                  name="available_bandwidth",
+                                                  type_="string",
+                                                  defvalue=""
+                                                  )
+        
+            decimation = simple_property(
+                                         id_="FRONTEND::tuner_status::decimation",
+                                         name="decimation",
+                                         type_="short")
+        
+            available_decimation = simple_property(
+                                                   id_="FRONTEND::tuner_status::available_decimation",
+                                                   name="available_decimation",
+                                                   type_="string",
+                                                   defvalue=""
+                                                   )
+        
+            tuner_number = simple_property(
+                                           id_="FRONTEND::tuner_status::tuner_number",
+                                           name="tuner_number",
+                                           type_="short")
+        
+            msdd_channel_type = simple_property(
+                                                id_="FRONTEND::tuner_status::msdd_channel_type",
+                                                name="msdd_channel_type",
+                                                type_="string")
+        
+            msdd_installation_name_csv = simple_property(
+                                                         id_="FRONTEND::tuner_status::msdd_installation_name_csv",
+                                                         name="msdd_installation_name_csv",
+                                                         type_="string")
+        
+            msdd_registration_name_csv = simple_property(
+                                                         id_="FRONTEND::tuner_status::msdd_registration_name_csv",
+                                                         name="msdd_registration_name_csv",
+                                                         type_="string")
+        
+            bits_per_sample = simple_property(
+                                              id_="FRONTEND::tuner_status::bits_per_sample",
+                                              name="bits_per_sample",
+                                              type_="short")
+        
+            adc_meter_values = simple_property(
+                                               id_="FRONTEND::tuner_status::adc_meter_values",
+                                               name="adc_meter_values",
+                                               type_="string")
+        
+            rcvr_gain = simple_property(
+                                        id_="FRONTEND::tuner_status::rcvr_gain",
+                                        name="rcvr_gain",
+                                        type_="float")
+        
+            ddc_gain = simple_property(
+                                       id_="FRONTEND::tuner_status::ddc_gain",
+                                       name="ddc_gain",
+                                       type_="float")
+        
+            allocated = simple_property(
+                                        id_="FRONTEND::tuner_status::allocated",
+                                        name="allocated",
+                                        type_="boolean")
+        
+            input_sample_rate = simple_property(
+                                                id_="FRONTEND::tuner_status::input_sample_rate",
+                                                name="input_sample_rate",
+                                                type_="double")
+        
+            output_format = simple_property(
+                                            id_="FRONTEND::tuner_status::output_format",
+                                            name="output_format",
+                                            type_="string")
+        
+            output_ip_address = simple_property(
+                                                id_="FRONTEND::tuner_status::output_ip_address",
+                                                name="output_ip_address",
+                                                type_="string")
+        
+            output_port = simple_property(
+                                          id_="FRONTEND::tuner_status::output_port",
+                                          name="output_port",
+                                          type_="long")
+        
+            output_channel = simple_property(
+                                             id_="FRONTEND::tuner_status::output_channel",
+                                             name="output_channel",
+                                             type_="string")
+        
+            output_enabled = simple_property(
+                                             id_="FRONTEND::tuner_status::output_enabled",
+                                             name="output_enabled",
+                                             type_="boolean")
+        
+            output_protocol = simple_property(
+                                              id_="FRONTEND::tuner_status::output_protocol",
+                                              name="output_protocol",
+                                              type_="string")
+        
+            output_vlan_enabled = simple_property(
+                                                  id_="FRONTEND::tuner_status::output_vlan_enabled",
+                                                  name="output_vlan_enabled",
+                                                  type_="boolean")
+        
+            output_vlan_tci = simple_property(
+                                              id_="FRONTEND::tuner_status::output_vlan_tci",
+                                              name="output_vlan_tci",
+                                              type_="string")
+        
+            output_flow = simple_property(
+                                          id_="FRONTEND::tuner_status::output_flow",
+                                          name="output_flow",
+                                          type_="string")
+        
+            output_timestamp_offset = simple_property(
+                                                      id_="FRONTEND::tuner_status::output_timestamp_offset",
+                                                      name="output_timestamp_offset",
+                                                      type_="string")
+        
+            output_endianess = simple_property(
+                                               id_="FRONTEND::tuner_status::output_endianess",
+                                               name="output_endianess",
+                                               type_="short",
+                                               defvalue=1
+                                               )
+        
+            output_mfp_flush = simple_property(
+                                               id_="FRONTEND::tuner_status::output_mfp_flush",
+                                               name="output_mfp_flush",
+                                               type_="long")
+        
+            psd_fft_size = simple_property(
+                                           id_="FRONTEND::tuner_status::psd_fft_size",
+                                           name="psd_fft_size",
+                                           type_="double")
+        
+            psd_averages = simple_property(
+                                           id_="FRONTEND::tuner_status::psd_averages",
+                                           name="psd_averages",
+                                           type_="double")
+        
+            psd_time_between_ffts = simple_property(
+                                                    id_="FRONTEND::tuner_status::psd_time_between_ffts",
+                                                    name="psd_time_between_ffts",
+                                                    type_="double")
+        
+            psd_output_bin_size = simple_property(
+                                                  id_="FRONTEND::tuner_status::psd_output_bin_size",
+                                                  name="psd_output_bin_size",
+                                                  type_="double")
+        
+            psd_window_type = simple_property(
+                                              id_="FRONTEND::tuner_status::psd_window_type",
+                                              name="psd_window_type",
+                                              type_="string")
+        
+            psd_peak_mode = simple_property(
+                                            id_="FRONTEND::tuner_status::psd_peak_mode",
+                                            name="psd_peak_mode",
+                                            type_="string")
+        
+            spc_fft_size = simple_property(
+                                           id_="FRONTEND::tuner_status::spc_fft_size",
+                                           name="spc_fft_size",
+                                           type_="short")
+        
+            spc_averages = simple_property(
+                                           id_="FRONTEND::tuner_status::spc_averages",
+                                           name="spc_averages",
+                                           type_="short")
+        
+            spc_time_between_ffts = simple_property(
+                                                    id_="FRONTEND::tuner_status::spc_time_between_ffts",
+                                                    name="spc_time_between_ffts",
+                                                    type_="double")
+        
+            spc_output_bin_size = simple_property(
+                                                  id_="FRONTEND::tuner_status::spc_output_bin_size",
+                                                  name="spc_output_bin_size",
+                                                  type_="short")
+        
+            spc_window_type = simple_property(
+                                              id_="FRONTEND::tuner_status::spc_window_type",
+                                              name="spc_window_type",
+                                              type_="string")
+        
+            spc_peak_mode = simple_property(
+                                            id_="FRONTEND::tuner_status::spc_peak_mode",
+                                            name="spc_peak_mode",
+                                            type_="string")
+        
+            spc_start_frequency = simple_property(
+                                                  id_="FRONTEND::tuner_status::spc_start_frequency",
+                                                  name="spc_start_frequency",
+                                                  type_="double")
+        
+            spc_stop_frequency = simple_property(
+                                                 id_="FRONTEND::tuner_status::spc_stop_frequency",
+                                                 name="spc_stop_frequency",
+                                                 type_="double")
+        
+            def __init__(self, tuner_type="", available_tuner_type="", allocation_id_csv="", center_frequency=0.0, bandwidth=0.0, sample_rate=0.0, group_id="", rf_flow_id="", enabled=False, complex=False, gain=0.0, available_frequency="", available_gain="", available_sample_rate="", available_bandwidth="", decimation=0, available_decimation="", tuner_number=0, msdd_channel_type="", msdd_installation_name_csv="", msdd_registration_name_csv="", bits_per_sample=0, adc_meter_values="", rcvr_gain=0.0, ddc_gain=0.0, allocated=False, input_sample_rate=0.0, output_format="", output_ip_address="", output_port=0, output_channel="", output_enabled=False, output_protocol="", output_vlan_enabled=False, output_vlan_tci="", output_flow="", output_timestamp_offset="", output_endianess=1, output_mfp_flush=0, psd_fft_size=0.0, psd_averages=0.0, psd_time_between_ffts=0.0, psd_output_bin_size=0.0, psd_window_type="", psd_peak_mode="", spc_fft_size=0, spc_averages=0, spc_time_between_ffts=0.0, spc_output_bin_size=0, spc_window_type="", spc_peak_mode="", spc_start_frequency=0.0, spc_stop_frequency=0.0):
                 self.tuner_type = tuner_type
                 self.available_tuner_type = available_tuner_type
                 self.allocation_id_csv = allocation_id_csv
@@ -1533,7 +1679,7 @@ class MSDD_base(CF__POA.Device, Device):
                 self.spc_peak_mode = spc_peak_mode
                 self.spc_start_frequency = spc_start_frequency
                 self.spc_stop_frequency = spc_stop_frequency
-                
+        
             def __str__(self):
                 """Return a string representation of this structure"""
                 d = {}
@@ -1591,27 +1737,28 @@ class MSDD_base(CF__POA.Device, Device):
                 d["spc_start_frequency"] = self.spc_start_frequency
                 d["spc_stop_frequency"] = self.spc_stop_frequency
                 return str(d)
-
-            def getId(self):
+        
+            @classmethod
+            def getId(cls):
                 return "frontend_tuner_status_struct"
-
-            def isStruct(self):
+        
+            @classmethod
+            def isStruct(cls):
                 return True
-
+        
             def getMembers(self):
-                return [("tuner_type",self.tuner_type),("available_tuner_type",self.available_tuner_type),("allocation_id_csv",self.allocation_id_csv),("center_frequency",self.center_frequency),("bandwidth",self.bandwidth),("sample_rate",self.sample_rate),("group_id",self.group_id),("rf_flow_id",self.rf_flow_id),("enabled",self.enabled),("complex",self.complex),("gain",self.gain),("available_frequency",self.available_frequency),("available_gain",self.available_gain),("available_sample_rate",self.available_sample_rate),("available_bandwidth",self.available_bandwidth),("decimation",self.decimation),("available_decimation",self.available_decimation),("tuner_number",self.tuner_number),("msdd_channel_type",self.msdd_channel_type),("msdd_installation_name_csv",self.msdd_installation_name_csv),("msdd_registration_name_csv",self.msdd_registration_name_csv),("bits_per_sample",self.bits_per_sample),("adc_meter_values",self.adc_meter_values),("rcvr_gain",self.rcvr_gain),("ddc_gain",self.ddc_gain),("allocated",self.allocated),("input_sample_rate",self.input_sample_rate),("output_format",self.output_format),("output_ip_address",self.output_ip_address),("output_port",self.output_port),("output_channel",self.output_channel),("output_enabled",self.output_enabled),("output_protocol",self.output_protocol),("output_vlan_enabled",self.output_vlan_enabled),("output_vlan_tci",self.output_vlan_tci),("output_flow",self.output_flow),("output_timestamp_offset",self.output_timestamp_offset),("output_endianess",self.output_endianess),("output_mfp_flush",self.output_mfp_flush),("psd_fft_size",self.psd_fft_size),("psd_averages",self.psd_averages),("psd_time_between_ffts",self.psd_time_between_ffts),("psd_output_bin_size",self.psd_output_bin_size),("psd_window_type",self.psd_window_type),("psd_peak_mode",self.psd_peak_mode),("spc_fft_size",self.spc_fft_size),("spc_averages",self.spc_averages),("spc_time_between_ffts",self.spc_time_between_ffts),("spc_output_bin_size",self.spc_output_bin_size),("spc_window_type",self.spc_window_type),("spc_peak_mode",self.spc_peak_mode),("spc_start_frequency",self.spc_start_frequency)]
+                return [("tuner_type",self.tuner_type),("available_tuner_type",self.available_tuner_type),("allocation_id_csv",self.allocation_id_csv),("center_frequency",self.center_frequency),("bandwidth",self.bandwidth),("sample_rate",self.sample_rate),("group_id",self.group_id),("rf_flow_id",self.rf_flow_id),("enabled",self.enabled),("complex",self.complex),("gain",self.gain),("available_frequency",self.available_frequency),("available_gain",self.available_gain),("available_sample_rate",self.available_sample_rate),("available_bandwidth",self.available_bandwidth),("decimation",self.decimation),("available_decimation",self.available_decimation),("tuner_number",self.tuner_number),("msdd_channel_type",self.msdd_channel_type),("msdd_installation_name_csv",self.msdd_installation_name_csv),("msdd_registration_name_csv",self.msdd_registration_name_csv),("bits_per_sample",self.bits_per_sample),("adc_meter_values",self.adc_meter_values),("rcvr_gain",self.rcvr_gain),("ddc_gain",self.ddc_gain),("allocated",self.allocated),("input_sample_rate",self.input_sample_rate),("output_format",self.output_format),("output_ip_address",self.output_ip_address),("output_port",self.output_port),("output_channel",self.output_channel),("output_enabled",self.output_enabled),("output_protocol",self.output_protocol),("output_vlan_enabled",self.output_vlan_enabled),("output_vlan_tci",self.output_vlan_tci),("output_flow",self.output_flow),("output_timestamp_offset",self.output_timestamp_offset),("output_endianess",self.output_endianess),("output_mfp_flush",self.output_mfp_flush),("psd_fft_size",self.psd_fft_size),("psd_averages",self.psd_averages),("psd_time_between_ffts",self.psd_time_between_ffts),("psd_output_bin_size",self.psd_output_bin_size),("psd_window_type",self.psd_window_type),("psd_peak_mode",self.psd_peak_mode),("spc_fft_size",self.spc_fft_size),("spc_averages",self.spc_averages),("spc_time_between_ffts",self.spc_time_between_ffts),("spc_output_bin_size",self.spc_output_bin_size),("spc_window_type",self.spc_window_type),("spc_peak_mode",self.spc_peak_mode),("spc_start_frequency",self.spc_start_frequency),("spc_stop_frequency",self.spc_stop_frequency)]
 
-                
         frontend_tuner_status = structseq_property(id_="FRONTEND::tuner_status",
-                                          name="frontend_tuner_status", 
-                                          structdef=FrontendTunerStatusStruct,                          
-                                          defvalue=[],
-                                          configurationkind=("configure",),
-                                          mode="readonly"
-                                          )
+                                                   name="frontend_tuner_status",
+                                                   structdef=FrontendTunerStatusStruct,
+                                                   defvalue=[],
+                                                   configurationkind=("property",),
+                                                   mode="readonly")
+
+
 
 '''provides port(s)'''
-
 
 class PortFRONTENDDigitalTunerIn_i(MSDD_base.PortFRONTENDDigitalTunerIn):
     def __init__(self, parent, name):
@@ -1697,7 +1844,6 @@ class PortFRONTENDDigitalTunerIn_i(MSDD_base.PortFRONTENDDigitalTunerIn):
         # TODO:
         pass
 
-
 class PortFRONTENDRFInfoIn_i(MSDD_base.PortFRONTENDRFInfoIn):
     def __init__(self, parent, name):
         self.parent = parent
@@ -1714,7 +1860,6 @@ class PortFRONTENDRFInfoIn_i(MSDD_base.PortFRONTENDRFInfoIn):
         # TODO:
         pass
 
-
     def _get_rfinfo_pkt(self):
         # TODO:
         pass
@@ -1724,416 +1869,3 @@ class PortFRONTENDRFInfoIn_i(MSDD_base.PortFRONTENDRFInfoIn):
         pass
 
 
-'''uses port(s)'''
-
-class PortBULKIODataSDDSOut_i(MSDD_base.PortBULKIODataSDDSOut):
-    class linkStatistics:
-        class statPoint:
-            def __init__(self):
-                self.elements = 0
-                self.queueSize = 0.0
-                self.secs = 0.0
-                self.streamID = ""
-
-        def __init__(self, port_ref):
-            self.enabled = True
-            self.bitSize = 8
-            self.historyWindow = 10
-            self.receivedStatistics = {}
-            self.port_ref = port_ref
-            self.receivedStatistics_idx = {}
-
-        def setBitSize(self, _bitSize):
-            self.bitSize = _bitSize
-
-        def setEnabled(self, enableStats):
-            self.enabled = enableStats
-
-        def update(self, elementsReceived, queueSize, streamID, connectionId):
-            if not self.enabled:
-                return
-
-            if self.receivedStatistics.has_key(connectionId):
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].elements = elementsReceived
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].queueSize = queueSize
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].secs = time.time()
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].streamID = streamID
-                self.receivedStatistics_idx[connectionId] += 1
-                self.receivedStatistics_idx[connectionId] = self.receivedStatistics_idx[connectionId]%self.historyWindow
-            else:
-                self.receivedStatistics[connectionId] = []
-                self.receivedStatistics_idx[connectionId] = 0
-                for i in range(self.historyWindow):
-                    self.receivedStatistics[connectionId].append(self.statPoint())
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].elements = elementsReceived
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].queueSize = queueSize
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].secs = time.time()
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].streamID = streamID
-                self.receivedStatistics_idx[connectionId] += 1
-                self.receivedStatistics_idx[connectionId] = self.receivedStatistics_idx[connectionId] % self.historyWindow
-
-        def retrieve(self):
-            if not self.enabled:
-                return
-
-            retVal = []
-            for entry in self.receivedStatistics:
-                runningStats = BULKIO.PortStatistics(portName=self.port_ref.name,averageQueueDepth=-1,elementsPerSecond=-1,bitsPerSecond=-1,callsPerSecond=-1,streamIDs=[],timeSinceLastCall=-1,keywords=[])
-
-                listPtr = (self.receivedStatistics_idx[entry] + 1) % self.historyWindow    # don't count the first set of data, since we're looking at change in time rather than absolute time
-                frontTime = self.receivedStatistics[entry][(self.receivedStatistics_idx[entry] - 1) % self.historyWindow].secs
-                backTime = self.receivedStatistics[entry][self.receivedStatistics_idx[entry]].secs
-                totalData = 0.0
-                queueSize = 0.0
-                streamIDs = []
-                while (listPtr != self.receivedStatistics_idx[entry]):
-                    totalData += self.receivedStatistics[entry][listPtr].elements
-                    queueSize += self.receivedStatistics[entry][listPtr].queueSize
-                    streamIDptr = 0
-                    foundstreamID = False
-                    while (streamIDptr != len(streamIDs)):
-                        if (streamIDs[streamIDptr] == self.receivedStatistics[entry][listPtr].streamID):
-                            foundstreamID = True
-                            break
-                        streamIDptr += 1
-                    if (not foundstreamID):
-                        streamIDs.append(self.receivedStatistics[entry][listPtr].streamID)
-                    listPtr += 1
-                    listPtr = listPtr % self.historyWindow
-
-                currentTime = time.time()
-                totalTime = currentTime - backTime
-                if totalTime == 0:
-                    totalTime = 1e6
-                receivedSize = len(self.receivedStatistics[entry])
-                runningStats.bitsPerSecond = (totalData * self.bitSize) / totalTime
-                runningStats.elementsPerSecond = totalData/totalTime
-                runningStats.averageQueueDepth = queueSize / receivedSize
-                runningStats.callsPerSecond = float((receivedSize - 1)) / totalTime
-                runningStats.streamIDs = streamIDs
-                runningStats.timeSinceLastCall = currentTime - frontTime
-                usesPortStat = BULKIO.UsesPortStatistics(connectionId=entry, statistics=runningStats)
-                retVal.append(usesPortStat)
-            return retVal
-
-    def __init__(self, parent, name, max_attachments=1):
-        self.parent = parent
-        self.name = name
-        self.max_attachments = max_attachments
-        self.outPorts = {} # key=connection_id,  value=port
-        self.attachedGroup = {} # key=connection_id,  value=attach_id
-        self.lastStreamData = None
-        self.lastName = None
-        self.defaultStreamSRI = BULKIO.StreamSRI(1, 0.0, 0.001, 1, 200, 0.0, 0.001, 1, 1, "sampleStream", False, [])
-        self.defaultTime = BULKIO.PrecisionUTCTime(0, 0, 0, 0, 0)
-        self.port_lock = threading.Lock()
-        self.stats = self.linkStatistics(self)
-        self.sriDict = {} # key=streamID  value=(StreamSRI, PrecisionUTCTime)
-    
-    def setBitSize(self, bitSize):
-        self.stats.setBitSize(bitSize)
-
-    def enableStats(self, enabled):
-        self.stats.setEnabled(enabled)
-        
-    def updateStats(self, elementsReceived, queueSize, streamID, connectionId):
-        self.port_lock.acquire()
-        try:
-            self.stats.update(elementsReceived, queueSize, streamID, connectionId)
-        finally:
-            self.port_lock.release()
-
-    def _get_connections(self):
-        currentConnections = []
-        self.port_lock.acquire()
-        try:
-            for id_, port in self.outPorts.items():
-                currentConnections.append(ExtendedCF.UsesConnection(id_, port))
-        finally:
-            self.port_lock.release()
-        return currentConnections
-
-    def _get_statistics(self):
-        self.port_lock.acquire()
-        try:
-            recStat = self.stats.retrieve()
-        finally:
-            self.port_lock.release()
-        return recStat
-
-    def _get_state(self):
-        if len(self._attachedStreams.values()) == 0:
-            return BULKIO.IDLE
-        # default behavior is to limit to one connection
-        elif len(self._attachedStreams.values()) == 1:
-            return BULKIO.BUSY
-        else:
-            return BULKIO.ACTIVE
-
-    def _get_attachedSRIs(self):
-        sris = []
-        self.port_lock.acquire()
-        try:
-            for entry in self.sriDict:
-                sri, t = self.sriDict[entry]
-                sris.append(copy.deepcopy(sri))
-        finally:
-            self.port_lock.release()
-        return sris
-
-    def connectPort(self, connection, connectionId):
-        self.port_lock.acquire()
-        try:
-            port = connection._narrow(BULKIO.dataSDDS)
-            self.outPorts[str(connectionId)] = port
-            if self.lastStreamData:
-                self.attachedGroup[str(connectionId)] = port.attach(self.lastStreamData, self.lastName)
-        finally:
-            self.port_lock.release()
-    
-    def disconnectPort(self, connectionId):
-        self.port_lock.acquire()
-        try:
-            entry = self.outPorts.pop(str(connectionId), None)
-            if connectionId in self.attachedGroup:
-                try:
-                    entry.detach(self.attachedGroup.pop(connectionId))
-                except:
-                    self.parent._log.exception("Unable to detach %s, should not have happened", str(connectionId))
-        finally:
-            self.port_lock.release()
-
-    def detach(self, attachId=None, connectionId=None):
-        self.port_lock.acquire()
-        try:
-            if attachId == None:
-                for entry in self.outPorts:
-                    try:
-                        if entry in self.attachedGroup:
-                            if connectionId == None or entry == connectionId:
-                                self.outPorts[entry].detach(self.attachedGroup[entry])
-                                self.attachedGroup.pop(entry)
-                    except:
-                        self.parent._log.exception("Unable to detach %s", str(entry))
-                self.lastStreamData = None
-                self.lastName = None
-            else:
-                for entry in self.attachedGroup:
-                    try:
-                        if self.attachedGroup[entry] == attachId:
-                            if entry in self.outPorts:
-                                if connectionId == None or entry == connectionId:
-                                    self.outPorts[entry].detach(self.attachedGroup[entry])
-                            self.attachedGroup.pop(entry)
-                            if len(self.attachedGroup) == 0:
-                                self.lastStreamData = None
-                                self.lastName = None
-                            break
-                    except:
-                        self.parent._log.exception("Unable to detach %s", str(entry))
-        finally:
-            self.port_lock.release()
-    
-    def attach(self, streamData, name):
-        ids = []
-        self.port_lock.acquire()
-        try:
-            for entry in self.outPorts:
-                try:
-                    if entry in self.attachedGroup:
-                        self.outPorts[entry].detach(self.attachedGroup[entry])
-                    self.attachedGroup[entry] = self.outPorts[entry].attach(streamData, name)
-                    ids.append(self.attachedGroup[entry])
-                except:
-                    self.parent._log.exception("Unable to deliver update to %s", str(entry))
-            self.lastStreamData = streamData
-            self.lastName = name
-        finally:
-            self.port_lock.release()
-        return ids
-
-    def getStreamDefinition(self, attachId):
-        return self.lastStreamData
-
-    def getUser(self, attachId):
-        return self.lastName
-    
-    def pushSRI(self, H, T):
-        self.port_lock.acquire()
-        self.sriDict[H.streamID] = (copy.deepcopy(H), copy.deepcopy(T))
-        self.defaultStreamSRI = H
-        self.defaultTime = T
-        try:
-            for connId, port in self.outPorts.items():
-                if port != None:
-                    try:
-                        port.pushSRI(H, T)
-                    except Exception:
-                        self.parent._log.exception("The call to pushSRI failed on port %s connection %s instance %s", self.name, connId, port)
-        finally:
-            self.refreshSRI = False
-            self.port_lock.release()
-         
-
-
-class PortBULKIODataVITA49Out_i(MSDD_base.PortBULKIODataVITA49Out):
-    class linkStatistics:
-        class statPoint:
-            def __init__(self):
-                self.elements = 0
-                self.queueSize = 0.0
-                self.secs = 0.0
-                self.streamID = ""
-
-        def __init__(self, port_ref):
-            self.enabled = True
-            self.bitSize = struct.calcsize('c') * 8
-            self.historyWindow = 10
-            self.receivedStatistics = {}
-            self.port_ref = port_ref
-            self.receivedStatistics_idx = {}
-
-        def setEnabled(self, enableStats):
-            self.enabled = enableStats
-
-        def update(self, elementsReceived, queueSize, streamID, connectionId):
-            if not self.enabled:
-                return
-
-            if self.receivedStatistics.has_key(connectionId):
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].elements = elementsReceived
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].queueSize = queueSize
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].secs = time.time()
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].streamID = streamID
-                self.receivedStatistics_idx[connectionId] += 1
-                self.receivedStatistics_idx[connectionId] = self.receivedStatistics_idx[connectionId]%self.historyWindow
-            else:
-                self.receivedStatistics[connectionId] = []
-                self.receivedStatistics_idx[connectionId] = 0
-                for i in range(self.historyWindow):
-                    self.receivedStatistics[connectionId].append(self.statPoint())
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].elements = elementsReceived
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].queueSize = queueSize
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].secs = time.time()
-                self.receivedStatistics[connectionId][self.receivedStatistics_idx[connectionId]].streamID = streamID
-                self.receivedStatistics_idx[connectionId] += 1
-                self.receivedStatistics_idx[connectionId] = self.receivedStatistics_idx[connectionId] % self.historyWindow
-
-        def retrieve(self):
-            if not self.enabled:
-                return
-
-            retVal = []
-            for entry in self.receivedStatistics:
-                runningStats = BULKIO.PortStatistics(portName=self.port_ref.name,averageQueueDepth=-1,elementsPerSecond=-1,bitsPerSecond=-1,callsPerSecond=-1,streamIDs=[],timeSinceLastCall=-1,keywords=[])
-
-                listPtr = (self.receivedStatistics_idx[entry] + 1) % self.historyWindow    # don't count the first set of data, since we're looking at change in time rather than absolute time
-                frontTime = self.receivedStatistics[entry][(self.receivedStatistics_idx[entry] - 1) % self.historyWindow].secs
-                backTime = self.receivedStatistics[entry][self.receivedStatistics_idx[entry]].secs
-                totalData = 0.0
-                queueSize = 0.0
-                streamIDs = []
-                while (listPtr != self.receivedStatistics_idx[entry]):
-                    totalData += self.receivedStatistics[entry][listPtr].elements
-                    queueSize += self.receivedStatistics[entry][listPtr].queueSize
-                    streamIDptr = 0
-                    foundstreamID = False
-                    while (streamIDptr != len(streamIDs)):
-                        if (streamIDs[streamIDptr] == self.receivedStatistics[entry][listPtr].streamID):
-                            foundstreamID = True
-                            break
-                        streamIDptr += 1
-                    if (not foundstreamID):
-                        streamIDs.append(self.receivedStatistics[entry][listPtr].streamID)
-                    listPtr += 1
-                    listPtr = listPtr % self.historyWindow
-
-                currentTime = time.time()
-                totalTime = currentTime - backTime
-                if totalTime == 0:
-                    totalTime = 1e6
-                receivedSize = len(self.receivedStatistics[entry])
-                runningStats.bitsPerSecond = (totalData * self.bitSize) / totalTime
-                runningStats.elementsPerSecond = totalData/totalTime
-                runningStats.averageQueueDepth = queueSize / receivedSize
-                runningStats.callsPerSecond = float((receivedSize - 1)) / totalTime
-                runningStats.streamIDs = streamIDs
-                runningStats.timeSinceLastCall = currentTime - frontTime
-                usesPortStat = BULKIO.UsesPortStatistics(connectionId=entry, statistics=runningStats)
-                retVal.append(usesPortStat)
-            return retVal
-
-    def __init__(self, parent, name):
-        self.parent = parent
-        self.name = name
-        self.outConnections = {} # key=connectionId,  value=port
-        self.refreshSRI = False
-        self.stats = self.linkStatistics(self)
-        self.port_lock = threading.Lock()
-        self.sriDict = {} # key=streamID  value=StreamSRI
-
-    def connectPort(self, connection, connectionId):
-        self.port_lock.acquire()
-        try:
-            port = connection._narrow(BULKIO.dataVITA49)
-            self.outConnections[str(connectionId)] = port
-            self.refreshSRI = True
-        finally:
-            self.port_lock.release()
-
-    def disconnectPort(self, connectionId):
-        self.port_lock.acquire()
-        try:
-            self.outConnections.pop(str(connectionId), None)
-        finally:
-            self.port_lock.release()
-
-    def enableStats(self, enabled):
-        self.stats.setEnabled(enabled)
-        
-    def _get_connections(self):
-        currentConnections = []
-        self.port_lock.acquire()
-        for id_, port in self.outConnections.items():
-            currentConnections.append(ExtendedCF.UsesConnection(id_, port))
-        self.port_lock.release()
-        return currentConnections
-
-    def _get_statistics(self):
-        self.port_lock.acquire()
-        recStat = self.stats.retrieve()
-        self.port_lock.release()
-        return recStat
-
-    def _get_state(self):
-        self.port_lock.acquire()
-        numberOutgoingConnections = len(self.outConnections)
-        self.port_lock.release()
-        if numberOutgoingConnections == 0:
-            return BULKIO.IDLE
-        else:
-            return BULKIO.ACTIVE
-        return BULKIO.BUSY
-
-    def _get_activeSRIs(self):
-        self.port_lock.acquire()
-        sris = []
-        for entry in self.sriDict:
-            sris.append(copy.deepcopy(self.sriDict[entry]))
-        self.port_lock.release()
-        return sris
-
-    def pushSRI(self, H):
-        self.port_lock.acquire()
-        self.sriDict[H.streamID] = copy.deepcopy(H)
-        try:
-            for connId, port in self.outConnections.items():
-                if port != None:
-                    try:
-                        port.pushSRI(H)
-                    except Exception:
-                        self.parent._log.exception("The call to pushSRI failed on port %s connection %s instance %s", self.name, connId, port)
-        finally:
-            self.refreshSRI = False
-            self.port_lock.release()
- 

@@ -3,22 +3,22 @@
 <properties>
   <simple id="DCE:cdc5ee18-7ceb-4ae6-bf4c-31f983179b4d" mode="readonly" name="device_kind" type="string">
     <description>This specifies the device kind</description>
-    <value>FRONTEND</value>
+    <value>FRONTEND::TUNER</value>
     <units></units>
-    <kind kindtype="configure"/>
     <kind kindtype="allocation"/>
+    <kind kindtype="property"/>
     <action type="eq"/>
   </simple>
   <simple id="DCE:0f99b2e4-9903-4631-9846-ff349d18ecfb" mode="readonly" name="device_model" type="string">
     <description> This specifies the specific device</description>
     <value>MSDD3000</value>
-    <kind kindtype="configure"/>
     <kind kindtype="allocation"/>
+    <kind kindtype="property"/>
     <action type="eq"/>
   </simple>
   <simple id="frontend_group_id" mode="readwrite" type="string">
     <value></value>
-    <kind kindtype="configure"/>
+    <kind kindtype="property"/>
     <action type="external"/>
   </simple>
   <simple id="clock_ref" mode="readwrite" name="clock_ref" type="short">
@@ -27,7 +27,7 @@
       <enumeration label="INTERNAL" value="0"/>
       <enumeration label="EXTERNAL" value="10"/>
     </enumerations>
-    <kind kindtype="configure"/>
+    <kind kindtype="property"/>
     <action type="external"/>
   </simple>
   <struct id="advanced" mode="readwrite">
@@ -108,24 +108,21 @@
       <description>If the MSDD is connected at a lower rate, then error the connection</description>
       <value>1000</value>
       <units>Mbps</units>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="msdd_configuration" mode="readwrite">
     <simple id="msdd_configuration::msdd_ip_address" mode="readwrite" name="msdd_ip_address" type="string">
       <value>127.0.0.1</value>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="msdd_configuration::msdd_port" mode="readwrite" name="msdd_port" type="string">
       <description>Always should be port 23</description>
       <value>23</value>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="msdd_time_of_day_configuration" mode="readwrite">
     <simple id="msdd_time_of_day_configuration::mode" mode="readwrite" name="mode" type="string">
@@ -137,13 +134,11 @@
         <enumeration label="NAV (IF AVAILABLE)" value="NAV"/>
         <enumeration label="TFN (IF AVAILABLE)" value="TFN"/>
       </enumerations>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="msdd_time_of_day_configuration::reference_adjust" mode="readwrite" name="reference_adjust" type="short">
       <value>0</value>
       <units>ns/sec drift</units>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="msdd_time_of_day_configuration::reference_track" mode="readwrite" name="reference_track" type="short">
@@ -154,7 +149,6 @@
         <enumeration label="CALIBRATE" value="1"/>
         <enumeration label="TRACK" value="2"/>
       </enumerations>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="msdd_time_of_day_configuration::toy" mode="readwrite" name="toy" type="short">
@@ -164,10 +158,9 @@
         <enumeration label="24 Hour offset from IRIGB" value="0"/>
         <enumeration label="Direct from IRIGB" value="1"/>
       </enumerations>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <structsequence id="msdd_output_configuration" mode="readwrite">
     <struct id="msdd_output_configuration_struct">
@@ -228,7 +221,7 @@ Bit 7: RF Gain
         <value>True</value>
       </simple>
     </struct>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </structsequence>
   <structsequence id="msdd_block_output_configuration" mode="readwrite">
     <struct id="msdd_block_output_configuration_struct">
@@ -300,7 +293,7 @@ Bit 7: RF Gain
         <value>True</value>
       </simple>
     </struct>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </structsequence>
   <struct id="msdd_psd_configuration" mode="readwrite">
     <description>Currently this is global across all fft modules.This may be changed in future releases.</description>
@@ -346,7 +339,7 @@ and comprise it unless you looking for the strongest signal.</description>
         <enumeration label="BOTH" value="BOTH"/>
       </enumerations>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="msdd_spc_configuration" mode="readwrite">
     <description>This is for configuration of the spectral scanning.</description>
@@ -401,77 +394,65 @@ and comprise it unless you looking for the strongest signal.</description>
       <value>1000000000.0</value>
       <units>Hz</units>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="FRONTEND::tuner_allocation" mode="readwrite" name="frontend_tuner_allocation">
     <simple id="FRONTEND::tuner_allocation::tuner_type" mode="readwrite" name="tuner_type" type="string">
       <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
       <value></value>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::allocation_id" mode="readwrite" name="allocation_id" type="string">
       <description>The allocation_id set by the caller. Used by the caller to reference the device uniquely</description>
       <value></value>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::center_frequency" mode="readwrite" name="center_frequency" type="double">
       <description>Requested center frequency.</description>
       <value>0.0</value>
       <units>Hz</units>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::bandwidth" mode="readwrite" name="bandwidth" type="double">
       <description>Requested Bandwidth</description>
       <value>0.0</value>
       <units>Hz</units>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::bandwidth_tolerance" mode="readwrite" name="bandwidth_tolerance" type="double">
       <description>Allowable Percent above requested bandwidth  (ie - 100 would be up to twice)</description>
       <value>10.0</value>
       <units>percent</units>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::sample_rate" mode="readwrite" name="sample_rate" type="double">
       <description>Requested sample rate. This can be ignored for such devices as analog tuners</description>
       <value>0.0</value>
       <units>sps</units>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::sample_rate_tolerance" mode="readwrite" name="sample_rate_tolerance" type="double">
       <description>Allowable Percent above requested sample rate (ie - 100 would be up to twice)</description>
       <value>10.0</value>
       <units>percent</units>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::device_control" mode="readwrite" name="device_control" type="boolean">
       <description>True: Has control over the device to make changes
 False: Does not need control and can just attach to any currently tasked device that satisfies the parameters (essentually a listener)</description>
       <value>true</value>
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::group_id" mode="readwrite" name="group_id" type="string">
       <description>Unique identifier that specifies a group of device. Must match group_id on the device</description>
       <value></value>
-      <kind kindtype="configure"/>
     </simple>
     <simple id="FRONTEND::tuner_allocation::rf_flow_id" mode="readwrite" name="rf_flow_id" type="string">
       <description>Optional. Specifies a certain RF flow to allocate against. If left empty, it will match all frontend devices.</description>
       <value></value>
-      <kind kindtype="configure"/>
     </simple>
     <configurationkind kindtype="allocation"/>
   </struct>
   <struct id="FRONTEND::listener_allocation" mode="readwrite" name="frontend_listener_allocation">
     <description>Allocates a listener (subscriber) based off a previous allocation </description>
     <simple id="FRONTEND::listener_allocation::existing_allocation_id" mode="readwrite" name="existing_allocation_id" type="string">
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <simple id="FRONTEND::listener_allocation::listener_allocation_id" mode="readwrite" name="listener_allocation_id" type="string">
-      <kind kindtype="configure"/>
       <action type="external"/>
     </simple>
     <configurationkind kindtype="allocation"/>
@@ -481,175 +462,137 @@ False: Does not need control and can just attach to any currently tasked device 
       <simple id="FRONTEND::tuner_status::tuner_type" mode="readwrite" name="tuner_type" type="string">
         <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
         <value></value>
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::available_tuner_type" mode="readwrite" name="available_tuner_type" type="string">
         <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
         <value></value>
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::allocation_id_csv" mode="readwrite" name="allocation_id_csv" type="string">
         <description>Comma separated values of all current allocation ids, both control and listener. The allocation_id set by the caller. Used by the caller to reference the device uniquely</description>
         <value></value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::center_frequency" mode="readwrite" name="center_frequency" type="double">
         <description>Current center frequency in Hz.</description>
         <value>0.0</value>
         <units>Hz</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::bandwidth" mode="readwrite" name="bandwidth" type="double">
         <description>Current Bandwidth in Hz.</description>
         <value>0.0</value>
         <units>Hz</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::sample_rate" mode="readwrite" name="sample_rate" type="double">
         <description>Current sample rate in sps. This can be ignored for such devices as analog tuners.</description>
         <value>0.0</value>
         <units>sps</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::group_id" mode="readwrite" name="group_id" type="string">
         <description>Unique identifier that specifies a group of device. Must match group_id on the device</description>
         <value></value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::rf_flow_id" mode="readwrite" name="rf_flow_id" type="string">
         <description>Specifies a certain RF flow to allocate against.</description>
         <value></value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::enabled" mode="readwrite" name="enabled" type="boolean">
         <description>True means tuner is enabled. Can be allocated but disabled.</description>
         <value>false</value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::complex" mode="readwrite" name="complex" type="boolean">
         <description>True if output is complex</description>
         <value>false</value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::gain" mode="readwrite" name="gain" type="double">
         <description>Current gain</description>
         <value>0.0</value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::available_frequency" mode="readwrite" name="available_frequency" type="string">
         <description>Available frequencies in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
         <units>Hz</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::available_gain" mode="readwrite" name="available_gain" type="string">
         <description>Available gain in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
         <units>dB</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::available_sample_rate" mode="readwrite" name="available_sample_rate" type="string">
         <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
         <units>sps</units>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::available_bandwidth" mode="readwrite" name="available_bandwidth" type="string">
         <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
         <units>Hz</units>
-        <kind kindtype="configure"/>
       </simple>
-      <simple id="FRONTEND::tuner_status::decimation" mode="readwrite" name="decimation" type="short">
-        <kind kindtype="configure"/>
-      </simple>
+      <simple id="FRONTEND::tuner_status::decimation" mode="readwrite" name="decimation" type="short"/>
       <simple id="FRONTEND::tuner_status::available_decimation" mode="readwrite" name="available_decimation" type="string">
         <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
-        <kind kindtype="configure"/>
       </simple>
       <simple id="FRONTEND::tuner_status::tuner_number" mode="readonly" name="tuner_number" type="short">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::msdd_channel_type" mode="readonly" name="msdd_channel_type" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::msdd_installation_name_csv" mode="readonly" name="msdd_installation_name_csv" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::msdd_registration_name_csv" mode="readonly" name="msdd_registration_name_csv" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::bits_per_sample" mode="readonly" name="bits_per_sample" type="short">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::adc_meter_values" mode="readonly" name="adc_meter_values" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::rcvr_gain" mode="readonly" name="rcvr_gain" type="float">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::ddc_gain" mode="readonly" name="ddc_gain" type="float">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::allocated" mode="readonly" name="allocated" type="boolean">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::input_sample_rate" mode="readonly" name="input_sample_rate" type="double">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_format" mode="readonly" name="output_format" type="string">
         <description>Two character SDDS digraph.</description>
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_ip_address" mode="readonly" name="output_ip_address" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_port" mode="readonly" name="output_port" type="long">
         <description>Output multicast port</description>
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_channel" mode="readonly" name="output_channel" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_enabled" mode="readonly" name="output_enabled" type="boolean">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_protocol" mode="readonly" name="output_protocol" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_vlan_enabled" mode="readonly" name="output_vlan_enabled" type="boolean">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_vlan_tci" mode="readonly" name="output_vlan_tci" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_flow" mode="readonly" name="output_flow" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_timestamp_offset" mode="readonly" name="output_timestamp_offset" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_endianess" name="output_endianess" type="short">
@@ -660,7 +603,6 @@ False: Does not need control and can just attach to any currently tasked device 
         </enumerations>
       </simple>
       <simple id="FRONTEND::tuner_status::output_mfp_flush" mode="readonly" name="output_mfp_flush" type="long">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::psd_fft_size" name="psd_fft_size" type="double"/>
@@ -683,7 +625,7 @@ False: Does not need control and can just attach to any currently tasked device 
       <simple id="FRONTEND::tuner_status::spc_stop_frequency" name="spc_stop_frequency" type="double"/>
       <configurationkind kindtype="configure"/>
     </struct>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </structsequence>
   <struct id="msdd_status" mode="readonly">
     <simple id="msdd_status::connected" name="connected" type="boolean">
@@ -723,12 +665,12 @@ False: Does not need control and can just attach to any currently tasked device 
     <simple id="msdd_status::tod_track_mode_state" name="tod_track_mode_state" type="string"/>
     <simple id="msdd_status::tod_bit_state" name="tod_bit_state" type="string"/>
     <simple id="msdd_status::tod_toy" name="tod_toy" type="string"/>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="msdd_advanced_debugging_tools" mode="readwrite">
     <simple id="msdd_advanced_debugging_tools::command" name="command" type="string"/>
     <simple id="msdd_advanced_debugging_tools::response" name="response" type="string"/>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
   <struct id="msdd_gain_configuration" mode="readwrite">
     <simple id="msdd_gain_configuration::rcvr_gain" name="rcvr_gain" type="float">
@@ -747,6 +689,6 @@ False: Does not need control and can just attach to any currently tasked device 
       <value>0</value>
       <units>dB</units>
     </simple>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </struct>
 </properties>

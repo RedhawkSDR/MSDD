@@ -1,8 +1,8 @@
 # By default, the RPM will install to the standard REDHAWK SDR root location (/var/redhawk/sdr)
 # You can override this at install time using --prefix /new/sdr/root when invoking rpm (preferred method, if you must)
-%{!?_sdrroot: %define _sdrroot /var/redhawk/sdr}
+%{!?_sdrroot: %global _sdrroot /var/redhawk/sdr}
 %define _prefix %{_sdrroot}
-Prefix: %{_prefix}
+Prefix:         %{_prefix}
 
 # Point install paths to locations within our target SDR root
 %define _sysconfdir    %{_prefix}/etc
@@ -10,36 +10,35 @@ Prefix: %{_prefix}
 %define _mandir        %{_prefix}/man
 %define _infodir       %{_prefix}/info
 
-Name: MSDD
-Summary: Device %{name}
-Version: 2.4.1
-Release: 0
-License: None
-Group: REDHAWK/Devices
-Source: %{name}-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-root
+Name:           MSDD
+Version:        2.4.1
+Release:        1%{?dist}
+Summary:        Device %{name}
 
-Requires: redhawk >= 1.8
-BuildRequires: redhawk-devel >= 1.8
-BuildRequires: autoconf automake libtool
+Group:          REDHAWK/Devices
+License:        None
+Source0:        %{name}-%{version}.tar.gz
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildRequires:  redhawk-devel >= 2.0
+Requires:       redhawk >= 2.0
+
 
 # Interface requirements
-Requires: frontendInterfaces bulkioInterfaces
-BuildRequires: frontendInterfaces bulkioInterfaces
+BuildRequires:  frontendInterfaces >= 2.2 bulkioInterfaces >= 2.0
+Requires:       frontendInterfaces >= 2.2 bulkioInterfaces >= 2.0
 
 BuildArch: noarch
 
-# Python requirements
-Requires: python 
-BuildRequires: python-devel >= 2.3
-
 
 %description
-Device for the MSDD-X000 series receivers
+Device %{name}
+ * Commit: __REVISION__
+ * Source Date/Time: __DATETIME__
 
 
 %prep
-%setup
+%setup -q
 
 
 %build
@@ -56,7 +55,7 @@ popd
 rm -rf $RPM_BUILD_ROOT
 # Implementation python
 pushd python
-%define _bindir %{_prefix}/dev/devices/MSDD/python 
+%define _bindir %{_prefix}/dev/devices/MSDD/python
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
@@ -67,8 +66,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,redhawk,redhawk,-)
-%dir %{_prefix}/dev/devices/%{name}
-%{_prefix}/dev/devices/%{name}/MSDD.spd.xml
-%{_prefix}/dev/devices/%{name}/MSDD.prf.xml
-%{_prefix}/dev/devices/%{name}/MSDD.scd.xml
-%{_prefix}/dev/devices/%{name}/python
+%dir %{_prefix}/dev/devices/MSDD
+%{_prefix}/dev/devices/MSDD/MSDD.scd.xml
+%{_prefix}/dev/devices/MSDD/MSDD.prf.xml
+%{_prefix}/dev/devices/MSDD/MSDD.spd.xml
+%{_prefix}/dev/devices/MSDD/python
+

@@ -2,7 +2,7 @@
 redhawk_DATA_auto = DataSDDS_port.py
 redhawk_DATA_auto += DigitalTuner_port.py
 redhawk_DATA_auto += MSDD_base.py
-redhawk_DATA_auto += DataVITA49_port.py
 redhawk_DATA_auto += msddcontroller.py
+redhawk_DATA_auto += DataVITA49_port.py
 redhawk_DATA_auto += RFInfo_port.py
 redhawk_SCRIPTS_auto = MSDD.py

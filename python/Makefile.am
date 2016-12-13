@@ -1,10 +1,13 @@
 # vim: noet: softtabstop=0
+ACLOCAL_AMFLAGS = -I m4 -I${OSSIEHOME}/share/aclocal/ossie
+AUTOMAKE_OPTIONS = subdir-objects
 
 xmldir = $(prefix)/dev/devices/MSDD/
-dist_xml_DATA = ../MSDD.prf.xml ../MSDD.scd.xml ../MSDD.spd.xml
+dist_xml_DATA = ../MSDD.scd.xml ../MSDD.prf.xml ../MSDD.spd.xml
 devdir = $(prefix)/dev/devices/MSDD/python/
 
 distclean-local:
+	rm -rf m4
 	rm -f config.*
 	rm -rf autom4te.cache
 	rm -f acinclude.m4

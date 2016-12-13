@@ -1,7 +1,8 @@
 from MSDD_base import *
+from bulkio import BULKIO, OutSDDSPort
 import Queue, threading
     
-class PortBULKIODataSDDSOut_implemented(PortBULKIODataSDDSOut_i):
+class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
     def __init__(self, parent, name, max_attachments=1):
         self.parent = parent
         self.name = name
@@ -13,7 +14,6 @@ class PortBULKIODataSDDSOut_implemented(PortBULKIODataSDDSOut_i):
         self.defaultStreamSRI = BULKIO.StreamSRI(1, 0.0, 0.001, 1, 200, 0.0, 0.001, 1, 1, "sampleStream", False, [])
         self.defaultTime = BULKIO.PrecisionUTCTime(0, 0, 0, 0, 0)
         self.port_lock = threading.Lock()
-        self.stats = self.linkStatistics(self)
         self.sriDict = {} # key=streamID  value=(StreamSRI, PrecisionUTCTime)
         self.H = {}
         self.T = {}
