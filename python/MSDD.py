@@ -120,20 +120,7 @@ class MSDD_i(MSDD_base):
     FE_RX_BW=int(8)
     FE_PSD_BW=int(16)
     FE_SPC_BW=int(32)
-    
-    
-    #def query(self, args):
-    #    retval = super(MSDD_i, self).query(args)
-    #    self._log.info("Query results")
-        
-        #global querycounter
-        
-        #retval[0].value = CORBA.Any(CORBA.TypeCode("IDL:omg.org/CORBA/AnySeq:1.0"), [CORBA.Any(CORBA.TypeCode("IDL:CF/Properties:1.0"), [retval[0].value.value()[querycounter]])])
-        #querycounter += 1
-        #self._log.info("Query Counter = %d" % querycounter)
-    #    self._log.info(retval)
-    #    return retval
-    
+       
     def getter_with_default(self,_get_,default_value=None):
         try:
             ret = _get_()
@@ -191,6 +178,27 @@ class MSDD_i(MSDD_base):
         self.port_dataVITA49_out = PortBULKIODataVITA49Out_implemented(self, "dataVITA49_out")
         self.port_dataVITA49_out_PSD = PortBULKIODataVITA49OutFFT_implemented(self, "dataVITA49_out_PSD")
 
+        self.addPropertyChangeListener("msdd_gain_configuration",self.msdd_gain_configuration_changed)
+        self.addPropertyChangeListener("clock_ref",self.clock_ref_changed)
+        self.addPropertyChangeListener("advanced",self.advanced_changed)
+        self.addPropertyChangeListener("msdd_output_configuration",self.msdd_output_configuration_changed)
+        self.addPropertyChangeListener("msdd_block_output_configuration",self.msdd_block_output_configuration_changed)
+        self.addPropertyChangeListener("msdd_psd_configuration",self.msdd_psd_configuration_changed)
+        self.addPropertyChangeListener("msdd_spc_configuration",self.msdd_spc_configuration_changed)
+        self.addPropertyChangeListener("msdd_time_of_day_configuration",self.msdd_time_of_day_configuration_changed)
+        self.addPropertyChangeListener("msdd_configuration",self.msdd_configuration_changed)
+        self.addPropertyChangeListener("msdd_advanced_debugging_tools",self.msdd_advanced_debugging_tools_changed)
+        
+        self.msdd_configuration_changed(self.msdd_configuration,self.msdd_configuration)
+        self.msdd_gain_configuration_changed(self.msdd_gain_configuration, self.msdd_gain_configuration)
+        self.clock_ref_changed(self.clock_ref, self.clock_ref)
+        self.advanced_changed(self.advanced,self.advanced)
+        self.msdd_output_configuration_changed(self.msdd_output_configuration,self.msdd_output_configuration)
+        self.msdd_block_output_configuration_changed(self.msdd_block_output_configuration,self.msdd_block_output_configuration)
+        self.msdd_psd_configuration_changed(self.msdd_psd_configuration,self.msdd_psd_configuration)
+        self.msdd_spc_configuration_changed(self.msdd_spc_configuration,self.msdd_spc_configuration)
+        self.msdd_time_of_day_configuration_changed(self.msdd_time_of_day_configuration,self.msdd_time_of_day_configuration)
+        self.msdd_advanced_debugging_tools_changed(self.msdd_advanced_debugging_tools,self.msdd_advanced_debugging_tools )
         
     def start(self):
         # Does not need process thread. So only calls device start
@@ -248,8 +256,8 @@ class MSDD_i(MSDD_base):
                 self.update_msdd_status()
                 self.update_tuner_status()
                 self.update_output_configuration()
-                self.onconfigure_prop_clock_ref(self.clock_ref, self.clock_ref)
-                self.onconfigure_prop_msdd_gain_configuration(self.msdd_gain_configuration, self.msdd_gain_configuration)
+                self.clock_ref_changed(self.clock_ref, self.clock_ref)
+                self.msdd_gain_configuration_changed(self.msdd_gain_configuration, self.msdd_gain_configuration)
             except:
                 self._log.error("UNABLE TO CONNECT TO THE MSDD WITH IP:PORT =  " + str(self.msdd_configuration.msdd_ip_address) + ":" + str(self.msdd_configuration.msdd_port))
                 self.disconnect_from_msdd()
@@ -549,7 +557,7 @@ class MSDD_i(MSDD_base):
             self.update_tuner_status()
         
         
-        self.onconfigure_prop_msdd_time_of_day_configuration(self.msdd_time_of_day_configuration,  self.msdd_time_of_day_configuration)
+        self.msdd_time_of_day_configuration_changed(self.msdd_time_of_day_configuration,  self.msdd_time_of_day_configuration)
         return True
 
 
@@ -577,7 +585,7 @@ class MSDD_i(MSDD_base):
             self._log.warn('Could not set gain value for tuner ' + str(tuner_num))        
 
     
-    def onconfigure_prop_msdd_gain_configuration(self, oldval, newval):
+    def msdd_gain_configuration_changed(self, oldval, newval):
         self.msdd_gain_configuration = newval   
         if self.MSDD == None:
             return
@@ -589,7 +597,7 @@ class MSDD_i(MSDD_base):
     
     
     
-    def onconfigure_prop_clock_ref(self, oldval, newval):
+    def clock_ref_changed(self, oldval, newval):
         self.clock_ref = newval  
         if self.MSDD == None:
             return
@@ -602,7 +610,7 @@ class MSDD_i(MSDD_base):
         self.update_msdd_status()
           
                 
-    def onconfigure_prop_advanced(self, oldval, newval):
+    def advanced_changed(self, oldval, newval):
         self.advanced = newval   
         if self.MSDD != None:
             self.MSDD.com.update_timeout(self.advanced.udp_timeout)
@@ -627,26 +635,26 @@ class MSDD_i(MSDD_base):
             self.frontend_tuner_status[tuner_num].tuner_types = tuner_types
 
     
-    def onconfigure_prop_msdd_output_configuration(self, oldval, newval):
+    def msdd_output_configuration_changed(self, oldval, newval):
         self.msdd_output_configuration = newval
         self.update_output_configuration()
         
-    def onconfigure_prop_msdd_block_output_configuration(self, oldval, newval):
+    def msdd_block_output_configuration_changed(self, oldval, newval):
         self.msdd_block_output_configuration = newval
         self.update_output_configuration()
         
-    def onconfigure_prop_msdd_psd_configuration(self, oldval, newval):
+    def msdd_psd_configuration_changed(self, oldval, newval):
         self.msdd_psd_configuration = newval
         for tuner_num in range(0,len(self.frontend_tuner_status)):
             self.update_fft_configuration(tuner_num)
 
-    def onconfigure_prop_msdd_spc_configuration(self, oldval, newval):
+    def msdd_spc_configuration_changed(self, oldval, newval):
         self.msdd_spc_configuration = newval
         for tuner_num in range(0,len(self.frontend_tuner_status)):
             self.update_spc_configuration(tuner_num)
 
         
-    def onconfigure_prop_msdd_time_of_day_configuration(self, oldval, newval):
+    def msdd_time_of_day_configuration_changed(self, oldval, newval):
         self.msdd_time_of_day_configuration = newval
         if self.MSDD == None:
             return False
@@ -689,14 +697,14 @@ class MSDD_i(MSDD_base):
         self.update_msdd_status()
         
         
-    def onconfigure_prop_msdd_configuration(self, oldval, newval):
+    def msdd_configuration_changed(self, oldval, newval):
         self._log.debug("MSDD Configuration changed. New value: " + str(newval))
         self.msdd_configuration = newval
         if not self.connect_to_msdd(): 
             sleep(0.25)
             self.connect_to_msdd()
         
-    def onconfigure_prop_msdd_advanced_debugging_tools(self, oldval, newval):
+    def msdd_advanced_debugging_tools_changed(self, oldval, newval):
         self.msdd_advanced_debugging_tools = newval
         self.msdd_advanced_debugging_tools.command = str(self.msdd_advanced_debugging_tools.command).rstrip('\n')
        
