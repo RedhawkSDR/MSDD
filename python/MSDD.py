@@ -26,7 +26,7 @@ from MSDD_base import *
 import copy, math, sys
 from pprint import pprint as pp
 from omniORB import CORBA, any
-#from ossie import properties
+from ossie import properties
 
 # MSDD helper files/packages
 from msddcontroller import MSDDRadio
@@ -795,6 +795,19 @@ class MSDD_i(MSDD_base):
                 reject_allocation = reject_allocation and (self.frontend_tuner_status[tn].allocated and self.frontend_tuner_status[tn].tuner_type == self.FE_TYPE_RXDIG)
             if reject_allocation:
                 return False
+        
+        #check allocationID is valid
+        if value.allocation_id in ("",None):
+            self._log.warn("Allocation ID cannot be blank")
+            raise CF.Device.InvalidCapacity("Allocation ID cannot be blank",properties.struct_to_props(value))
+        
+        #Check if allocationID is already used
+        for tuner in self.frontend_tuner_status:
+            alloc_ids = tuner.allocation_id_csv.split(',')
+            for alloc_id in alloc_ids:
+                if alloc_id==value.allocation_id:
+                    self._log.warn("Allocation ID already in use")
+                    raise CF.Device.InvalidCapacity("Allocation ID already used ",properties.struct_to_props(value))
                 
         if retry_tuner_num == None:
             tuner_range = range(0,len(self.frontend_tuner_status))
