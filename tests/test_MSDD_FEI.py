@@ -49,8 +49,8 @@ dut_capabilities = {'RX_DIGITIZER':{'COMPLEX': True,
                                     'BW_MIN':   20000000.0,
                                     'SR_MAX':   25000000.0,
                                     'SR_MIN':   25000000.0,
-                                    'GAIN_MIN' :-60,
-                                    'GAIN_MAX' :0}}
+                                    'GAIN_MIN' :-48,
+                                    'GAIN_MAX' :12}}
 
 
 

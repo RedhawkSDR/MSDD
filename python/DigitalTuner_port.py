@@ -4,7 +4,7 @@ import inspect
 from omniORB import CORBA, any
 #import redhawk.frontendInterfaces.Frontend_idl
 from redhawk.frontendInterfaces.Frontend_idl import *
-from redhawk.frontendInterfaces.FRONTEND import FrontendException
+from redhawk.frontendInterfaces.FRONTEND import FrontendException, BadParameterException,NotSupportedException
 from ossie.properties import props_from_dict, props_to_dict
 #NB - This port needs to do reasonableness checking on all inputs
 #     the underlying self.parent.configureTuner() call does not perform adequate checking for invalid inputs
@@ -123,7 +123,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
                 self.parent._log.warn("PROBLEM: %s"%e)
         except:
             error_string = "Error setting center frequency to " + str(freq) + " for tuner " + str(tuner_num)
-            raise FrontendException(error_string)
+            raise BadParameterException(error_string)
         finally:
             self.parent.update_tuner_status([tuner_num]+changed_child_numbers)
         
@@ -171,7 +171,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
             self.parent._log.warning(str(e))
             error_string = "Error setting bandwidth to " + str(bw) + " for tuner " + str(tuner_num)
             self.parent._log.warning(error_string)
-            raise FrontendException(error_string)
+            raise BadParameterException(error_string)
         self.parent.update_tuner_status([tuner_num])
 
     def getTunerBandwidth(self, id):
@@ -206,7 +206,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
                 raise Exception("")
         except:
             error_string = "Error setting gain to " + str(gain) + " for tuner " + str(tuner_num)
-            raise FrontendException(error_string)
+            raise BadParameterException(error_string)
         self.parent.update_tuner_status([tuner_num])
 
     def getTunerGain(self, id):
@@ -237,10 +237,10 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
             error_string = "Can not determine tuner for allocation id "+ str(id) + " when running function " + str(inspect.stack()[0][3]) + ". Either invalid id or permissions"
             raise FrontendException(error_string)
         try:
-            if self.frontend_tuner_status[tuner_num].rx_object.is_digital():
-                self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(enable)
+            if self.parent.frontend_tuner_status[tuner_num].rx_object.is_digital():
+               self.parent.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(enable)
         except:
-            pass
+            self.parent._log.exception("Exception on Tuner Enable")
         self.parent.update_tuner_status([tuner_num])
 
     def getTunerEnable(self, id):
@@ -278,7 +278,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
             error_string = "Error setting sr to " + str(sr) + " for tuner " + str(tuner_num)
             self.parent._log.error(error_string)
             self.parent._log.error(str(e))
-            raise FrontendException(error_string)
+            raise BadParameterException(error_string)
         self.parent.update_tuner_status([tuner_num])
 
     def getTunerOutputSampleRate(self, id):

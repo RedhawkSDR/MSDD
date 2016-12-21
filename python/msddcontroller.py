@@ -611,7 +611,7 @@ class RcvBaseModule(baseModule):
         return self.setter_with_validation(float(gain), self._setGain, self.getGain,1)    
     def get_valid_gain(self,gain):
         gl = self.getGainList()
-        return self.get_value_valid(gain, 0, float(gl[0]), float(gl[1]), float(gl[2]),True)
+        return self.get_value_valid(gain, 0, float(gl[0]), float(gl[1]), float(gl[2]),False)
     
     def getBIT(self):
         resp = self.send_query_command("BIT")
@@ -812,9 +812,8 @@ class MSDDX000_RcvModule(RcvBaseModule):
     def getBandwidthList_Hz(self):
         return [self.MSDD_X000_BANDWIDTH,self.MSDD_X000EX_BANDWIDTH ]
     def get_valid_bandwidth(self,bandwidth_hz,bandwidth_tolerance_perc):
-        return bandwidth_hz
-        #bw_list = self.getBandwidthList_Hz()
-        #return self.get_value_valid_list(bandwidth_hz,bandwidth_tolerance_perc, bw_list)
+        bw_list = self.getBandwidthList_Hz()
+        return self.get_value_valid_list(bandwidth_hz,bandwidth_tolerance_perc, bw_list)
         
     bandwidth_hz = property(getBandwidth_Hz,setBandwidth_Hz , doc="Bandwidth in Hz")
     valid_bandwidth_list_hz = property(getBandwidthList_Hz)
@@ -1228,15 +1227,25 @@ class WBDDCModule(DdcBaseModule):
         return True
         #return (bw == self.MSDD_X000_BANDWIDTH)
     def getBandwidth_Hz(self):
-        return self.MSDD_X000_BANDWIDTH
+        if self.sample_rate == 25000000:
+            return self.MSDD_X000_BANDWIDTH
+        elif self.sample_rate == 50000000:
+            return self.MSDD_X000EX_BANDWIDTH
     def getBandwidthList_Hz(self):
-        return [self.MSDD_X000_BANDWIDTH, self.MSDD_X000EX_BANDWIDTH]
+        rv = []
+        for rate in DdcBaseModule.getSampleRateList(self):
+            if rate == 25000000.0:
+                rv.append(self.MSDD_X000_BANDWIDTH)
+            elif rate == 50000000.0:
+                rv.append(self.MSDD_X000EX_BANDWIDTH)
+            else:
+                print "ERROR: Trying to match BW for unknown rate" , rate
+        return rv
     def getBandwidthListStr(self):
-        return str(self.MSDD_X000_BANDWIDTH, self.MSDD_X000EX_BANDWIDTH)
+        return self.create_csv(self.getBandwidthList_Hz)
     def get_valid_bandwidth(self,bandwidth_hz,bandwidth_tolerance_perc, ibw_override=None):
-        return bandwidth_hz
-        #bw_list = self.getBandwidthList_Hz()
-        #return self.get_value_valid_list(bandwidth_hz,bandwidth_tolerance_perc, bw_list)
+        bw_list = self.getBandwidthList_Hz()
+        return self.get_value_valid_list(bandwidth_hz,bandwidth_tolerance_perc, bw_list)
     
     
     bandwidth_hz = property(getBandwidth_Hz,setBandwidth_Hz , doc="Bandwidth in Hz")
@@ -1283,7 +1292,8 @@ class NBDDCModule(DdcBaseModule):
     def getBandwidthListStr(self):
         return str(self.getBandwidthList_Hz())
     def get_valid_bandwidth(self,bandwidth_hz,bandwidth_tolerance_perc, ibw_override=None):
-        return self.getBandwidth_Hz()
+        bw_list = self.getBandwidthList_Hz()
+        return self.get_value_valid_list(bandwidth_hz,bandwidth_tolerance_perc, bw_list)
     
     
     frequency_hz = property(getFrequency_Hz,setFrequency_Hz, doc="Center Frequency in Hz")

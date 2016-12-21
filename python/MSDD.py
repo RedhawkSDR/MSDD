@@ -989,7 +989,7 @@ class MSDD_i(MSDD_base):
                 return True
                 
             except:
-                    self._log.error("--- FAILED ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
+                    self._log.exception("--- FAILED ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
                     continue
                 
                 
