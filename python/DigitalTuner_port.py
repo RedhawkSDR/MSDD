@@ -185,7 +185,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
         raise NotSupportedException("AGC is NOT supported in the MSDD device")
 
     def getTunerAgcEnable(self, id):
-        return False
+        raise NotSupportedException("AGC is NOT supported in the MSDD device")
 
     def setTunerGain(self, id, gain):
         tuner_num = self.parent.findTunerByAllocationID(alloc_id=id, include_control=True, include_listeners=False)
