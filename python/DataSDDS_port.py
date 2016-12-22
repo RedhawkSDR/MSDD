@@ -7,7 +7,7 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
         self.parent = parent
         self.name = name
         self.max_attachments = max_attachments
-        self.outPorts = {} # key=connection_id,  value=port
+        self.outConnections = {} # key=connection_id,  value=port
         self.attachedGroup = {} # key=connection_id,  value=attach_id
         self.lastStreamData = {}
         self.lastName = {}
@@ -23,7 +23,7 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
         self.parent._log.info("Got a connectPort called with connectionID:"+str(connectionId) + " with last stream: " + str(self.lastStreamData)) 
         self.port_lock.acquire()
         port = connection._narrow(BULKIO.dataSDDS)
-        self.outPorts[str(connectionId)] = port
+        self.outConnections[str(connectionId)] = port
         
         self.parent._log.info("connectPort db 1!") 
         #TODO: need to figure out how to handle attach on connect, for multiple streams....
@@ -49,14 +49,14 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
         #print "Called attach() with name:"+str(name)
         ids = []
         self.port_lock.acquire()
-        for entry in self.outPorts:
+        for entry in self.outConnections:
             try:
                 #Added this check to only send to the connection with the connection_id == allocation_id
                 if entry == streamData.id:
                     self.parent._log.trace("Found connection to to push attach() on")
                     if entry in self.attachedGroup:
-                        self.outPorts[entry].detach(self.attachedGroup[entry])
-                    self.attachedGroup[entry] = self.outPorts[entry].attach(streamData, name)
+                        self.outConnections[entry].detach(self.attachedGroup[entry])
+                    self.attachedGroup[entry] = self.outConnections[entry].attach(streamData, name)
                     ids.append(self.attachedGroup[entry])
                     if self.H.has_key(entry) and self.T.has_key(entry):
                         self.pushSRIbyConnectionID(self.H[entry], self.T[entry], entry)
@@ -74,12 +74,12 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
     def detach(self, attachId=None, connectionId=None):
         self.port_lock.acquire()
         if attachId == None:
-            for entry in self.outPorts:
+            for entry in self.outConnections:
                 try:
                     if entry in self.attachedGroup:
                         if connectionId == None or entry == connectionId:
                             self.parent._log.info("START DETACH 1: " + str(self.attachedGroup[entry]))
-                            self.outPorts[entry].detach(self.attachedGroup[entry])
+                            self.outConnections[entry].detach(self.attachedGroup[entry])
                             self.attachedGroup.pop(entry)
                             self.parent._log.info("DONE DETACH 1 ")
                             
@@ -91,10 +91,10 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
             for entry in self.attachedGroup:
                 try:
                     if self.attachedGroup[entry] == attachId:
-                        if entry in self.outPorts:
+                        if entry in self.outConnections:
                             if connectionId == None or entry == connectionId:
                                 self.parent._log.info("START DETACH 2: " + str(self.attachedGroup[entry]))
-                                self.outPorts[entry].detach(self.attachedGroup[entry])
+                                self.outConnections[entry].detach(self.attachedGroup[entry])
                                 self.parent._log.info("DONE DETACH 2 ")
                         self.attachedGroup.pop(entry)
                         if len(self.attachedGroup) == 0:
@@ -131,12 +131,12 @@ class PortBULKIODataSDDSOut_implemented(OutSDDSPort):
     def pushSRIbyConnectionID(self, H, T, connectionId):
         self.parent._log.info("pushSRIbyConnectionID start...") 
         try:
-            for connId in self.outPorts.keys():
+            for connId in self.outConnections.keys():
                 self.parent._log.trace("in pushSRIbyConnectionID Checking connection:"+str(connId)+" for match with:"+str(connectionId))
-                if self.outPorts[connId] != None:
+                if self.outConnections[connId] != None:
                     if connId == connectionId:
                         self.parent._log.trace("Pushing SRI to matching port")
-                        self.outPorts[connId].pushSRI(H, T)
+                        self.outConnections[connId].pushSRI(H, T)
                         
 
         except:

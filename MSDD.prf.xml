@@ -567,7 +567,7 @@ False: Does not need control and can just attach to any currently tasked device 
         <description>Two character SDDS digraph.</description>
         <action type="external"/>
       </simple>
-      <simple id="FRONTEND::tuner_status::output_ip_address" mode="readonly" name="output_ip_address" type="string">
+      <simple id="FRONTEND::tuner_status::output_multicast" mode="readonly" name="output_multicast" type="string">
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_port" mode="readonly" name="output_port" type="long">
@@ -587,6 +587,11 @@ False: Does not need control and can just attach to any currently tasked device 
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_vlan_tci" mode="readonly" name="output_vlan_tci" type="string">
+        <action type="external"/>
+      </simple>
+      <simple id="FRONTEND::tuner_status::output_vlan" mode="readwrite" name="output_vlan" type="long">
+        <value>0</value>
+        <kind kindtype="property"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_flow" mode="readonly" name="output_flow" type="string">

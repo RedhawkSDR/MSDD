@@ -145,7 +145,7 @@ class MSDD_i(MSDD_base):
     def create_allocation_id_csv(self, control_str, listener_list):
         aid_csv = control_str
         for i in range(0,len(listener_list)):
-            aid_csv = "," + str(listener_list[i])
+            aid_csv+=("," + str(listener_list[i]))
         return aid_csv
         
     
@@ -433,12 +433,13 @@ class MSDD_i(MSDD_base):
                 #if the tuner has streaming output
                 if self.frontend_tuner_status[tuner_num].rx_object.has_streaming_output():
                     self.frontend_tuner_status[tuner_num].output_format = "CI"
-                    self.frontend_tuner_status[tuner_num].output_ip_address = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.ip_addr)
+                    self.frontend_tuner_status[tuner_num].output_multicast = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.ip_addr)
                     self.frontend_tuner_status[tuner_num].output_port = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.ip_port)
                     self.frontend_tuner_status[tuner_num].output_enabled = self.frontend_tuner_status[tuner_num].rx_object.output_object.object.enabled
                     self.frontend_tuner_status[tuner_num].output_protocol = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.protocol)
                     self.frontend_tuner_status[tuner_num].output_vlan_enabled = int(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.vlan_tagging_enabled) == 1
                     self.frontend_tuner_status[tuner_num].output_vlan_tci = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.vlan_tci)
+                    self.frontend_tuner_status[tuner_num].output_vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci) & 0xFFF
                     self.frontend_tuner_status[tuner_num].output_flow = self.MSDD.get_stream_flow(self.frontend_tuner_status[tuner_num].rx_object.output_object)
                     self.frontend_tuner_status[tuner_num].output_timestamp_offset = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.timestamp_offset_ns)
                     self.frontend_tuner_status[tuner_num].output_channel = str(self.frontend_tuner_status[tuner_num].rx_object.output_object.object.channel_number)
@@ -909,9 +910,10 @@ class MSDD_i(MSDD_base):
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
                        
                     elif value.sample_rate!=0 and value.bandwidth==0: #Specify only SR
-                        valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(sr, value.sample_rate_tolerance)
+                        valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(value.sample_rate, value.sample_rate_tolerance)
+                        valid_bw = valid_sr
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
-                        success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_sr)
+                        success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
                        
                     elif value.sample_rate==0 and value.bandwidth!=0: #specify only BW so use it for requested SR
@@ -933,7 +935,10 @@ class MSDD_i(MSDD_base):
                 if self.frontend_tuner_status[tuner_num].rx_object.is_analog():
                     valid_sr = 0.0
                     valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(value.center_frequency)
-                    valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(value.bandwidth, value.bandwidth_tolerance)
+                    if value.bandwidth != 0:
+                        valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(value.bandwidth, value.bandwidth_tolerance)
+                    else: 
+                        valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(1, 1e15)
                     success &= self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setFrequency_Hz(valid_cf)
                     success &= self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setBandwidth_Hz(valid_bw)
                 
@@ -1127,10 +1132,11 @@ class MSDD_i(MSDD_base):
         return False
 
     def deallocate_frontend_listener_allocation(self, value):
-        tuner_num = self.findTunerByAllocationID(value.existing_allocation_id,False,True)
-        if tuner_num != None:
-            self.removeListener(value.listener_allocation_id, tuner_num)
-            return True
+        tuner_num = self.findTunerByAllocationID(value.listener_allocation_id,False,True)
+        if tuner_num == None:
+            self._log.info("Ask to deallocate a listener with a control allocation ID that does not exist")
+            return
+        self.removeListener(value.listener_allocation_id, tuner_num)
         return       
 
 
@@ -1271,8 +1277,8 @@ class MSDD_i(MSDD_base):
             if self.frontend_tuner_status[tuner_num].output_enabled:
                 sdef = BULKIO.SDDSStreamDefinition(id = alloc_id,
                                                    dataFormat = BULKIO.SDDS_CI,
-                                                   multicastAddress = self.frontend_tuner_status[tuner_num].output_ip_address,
-                                                   vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci),
+                                                   multicastAddress = self.frontend_tuner_status[tuner_num].output_multicast,
+                                                   vlan = int(self.frontend_tuner_status[tuner_num].output_vlan),
                                                    port = int(self.frontend_tuner_status[tuner_num].output_port),
                                                    sampleRate = int(self.frontend_tuner_status[tuner_num].sample_rate),
                                                    timeTagValid = True,
@@ -1294,15 +1300,15 @@ class MSDD_i(MSDD_base):
                 
                 #This is needed for a API change between redhawk 1.8 and 1.10
                 try:
-                    vdef = BULKIO.VITA49StreamDefinition(ip_address= self.frontend_tuner_status[tuner_num].output_ip_address, 
-                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci), 
+                    vdef = BULKIO.VITA49StreamDefinition(ip_address= self.frontend_tuner_status[tuner_num].output_multicast, 
+                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan), 
                                                      port = int(self.frontend_tuner_status[tuner_num].output_port), 
                                                      protocol = BULKIO.VITA49_UDP_TRANSPORT,
                                                      valid_data_format = True, 
                                                      data_format = vita_data_payload_format)
                 except:
-                    vdef = BULKIO.VITA49StreamDefinition(ip_address= self.frontend_tuner_status[tuner_num].output_ip_address, 
-                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci), 
+                    vdef = BULKIO.VITA49StreamDefinition(ip_address= self.frontend_tuner_status[tuner_num].output_multicast, 
+                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan), 
                                                      port = int(self.frontend_tuner_status[tuner_num].output_port), 
                                                      id = alloc_id,
                                                      protocol = BULKIO.VITA49_UDP_TRANSPORT,
@@ -1318,8 +1324,8 @@ class MSDD_i(MSDD_base):
                 binFreq = self.frontend_tuner_status[tuner_num].sample_rate / num_bins;
                 sdef = BULKIO.SDDSStreamDefinition(id = alloc_id,
                                                    dataFormat = BULKIO.SDDS_SI,
-                                                   multicastAddress = self.frontend_tuner_status[tuner_num].output_ip_address,
-                                                   vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci),
+                                                   multicastAddress = self.frontend_tuner_status[tuner_num].output_multicast,
+                                                   vlan = int(self.frontend_tuner_status[tuner_num].output_vlan),
                                                    port = int(self.frontend_tuner_status[tuner_num].output_port),
                                                    sampleRate = int(binFreq),
                                                    timeTagValid = True,
@@ -1340,15 +1346,15 @@ class MSDD_i(MSDD_base):
                                                                                 )
                 
                 try:
-                    vdef = BULKIO.VITA49StreamDefinition(ipAddress= self.frontend_tuner_status[tuner_num].output_ip_address, 
-                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci), 
+                    vdef = BULKIO.VITA49StreamDefinition(ipAddress= self.frontend_tuner_status[tuner_num].output_multicast, 
+                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan), 
                                                      port = int(self.frontend_tuner_status[tuner_num].output_port), 
                                                      protocol = BULKIO.VITA49_UDP_TRANSPORT,
                                                      valid_data_format = True, 
                                                      data_format = vita_data_payload_format)
                 except:
-                    vdef = BULKIO.VITA49StreamDefinition(ipAddress= self.frontend_tuner_status[tuner_num].output_ip_address, 
-                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci), 
+                    vdef = BULKIO.VITA49StreamDefinition(ipAddress= self.frontend_tuner_status[tuner_num].output_multicast, 
+                                                     vlan = int(self.frontend_tuner_status[tuner_num].output_vlan), 
                                                      port = int(self.frontend_tuner_status[tuner_num].output_port), 
                                                      id = alloc_id,
                                                      protocol = BULKIO.VITA49_UDP_TRANSPORT,
@@ -1366,7 +1372,7 @@ class MSDD_i(MSDD_base):
                 binFreq = (self.frontend_tuner_status[tuner_num].spc_stop_frequency - self.frontend_tuner_status[tuner_num].spc_start_frequency) / num_bins;
                 sdef = BULKIO.SDDSStreamDefinition(id = alloc_id,
 												   dataFormat = BULKIO.SDDS_SI,
-												   multicastAddress = self.frontend_tuner_status[tuner_num].output_ip_address,
+												   multicastAddress = self.frontend_tuner_status[tuner_num].output_multicast,
 												   vlan = int(self.frontend_tuner_status[tuner_num].output_vlan_tci),
 												   port = int(self.frontend_tuner_status[tuner_num].output_port),
 												   sampleRate = int(binFreq),

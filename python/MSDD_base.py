@@ -1498,10 +1498,10 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                                             name="output_format",
                                             type_="string")
         
-            output_ip_address = simple_property(
-                                                id_="FRONTEND::tuner_status::output_ip_address",
-                                                name="output_ip_address",
-                                                type_="string")
+            output_multicast = simple_property(
+                                               id_="FRONTEND::tuner_status::output_multicast",
+                                               name="output_multicast",
+                                               type_="string")
         
             output_port = simple_property(
                                           id_="FRONTEND::tuner_status::output_port",
@@ -1532,6 +1532,13 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                                               id_="FRONTEND::tuner_status::output_vlan_tci",
                                               name="output_vlan_tci",
                                               type_="string")
+        
+            output_vlan = simple_property(
+                                          id_="FRONTEND::tuner_status::output_vlan",
+                                          name="output_vlan",
+                                          type_="long",
+                                          defvalue=0
+                                          )
         
             output_flow = simple_property(
                                           id_="FRONTEND::tuner_status::output_flow",
@@ -1625,7 +1632,7 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                                                  name="spc_stop_frequency",
                                                  type_="double")
         
-            def __init__(self, tuner_type="", available_tuner_type="", allocation_id_csv="", center_frequency=0.0, bandwidth=0.0, sample_rate=0.0, group_id="", rf_flow_id="", enabled=False, complex=False, gain=0.0, available_frequency="", available_gain="", available_sample_rate="", available_bandwidth="", decimation=0, available_decimation="", tuner_number=0, msdd_channel_type="", msdd_installation_name_csv="", msdd_registration_name_csv="", bits_per_sample=0, adc_meter_values="", rcvr_gain=0.0, ddc_gain=0.0, allocated=False, input_sample_rate=0.0, output_format="", output_ip_address="", output_port=0, output_channel="", output_enabled=False, output_protocol="", output_vlan_enabled=False, output_vlan_tci="", output_flow="", output_timestamp_offset="", output_endianess=1, output_mfp_flush=0, psd_fft_size=0.0, psd_averages=0.0, psd_time_between_ffts=0.0, psd_output_bin_size=0.0, psd_window_type="", psd_peak_mode="", spc_fft_size=0, spc_averages=0, spc_time_between_ffts=0.0, spc_output_bin_size=0, spc_window_type="", spc_peak_mode="", spc_start_frequency=0.0, spc_stop_frequency=0.0):
+            def __init__(self, tuner_type="", available_tuner_type="", allocation_id_csv="", center_frequency=0.0, bandwidth=0.0, sample_rate=0.0, group_id="", rf_flow_id="", enabled=False, complex=False, gain=0.0, available_frequency="", available_gain="", available_sample_rate="", available_bandwidth="", decimation=0, available_decimation="", tuner_number=0, msdd_channel_type="", msdd_installation_name_csv="", msdd_registration_name_csv="", bits_per_sample=0, adc_meter_values="", rcvr_gain=0.0, ddc_gain=0.0, allocated=False, input_sample_rate=0.0, output_format="", output_multicast="", output_port=0, output_channel="", output_enabled=False, output_protocol="", output_vlan_enabled=False, output_vlan_tci="", output_vlan=0, output_flow="", output_timestamp_offset="", output_endianess=1, output_mfp_flush=0, psd_fft_size=0.0, psd_averages=0.0, psd_time_between_ffts=0.0, psd_output_bin_size=0.0, psd_window_type="", psd_peak_mode="", spc_fft_size=0, spc_averages=0, spc_time_between_ffts=0.0, spc_output_bin_size=0, spc_window_type="", spc_peak_mode="", spc_start_frequency=0.0, spc_stop_frequency=0.0):
                 self.tuner_type = tuner_type
                 self.available_tuner_type = available_tuner_type
                 self.allocation_id_csv = allocation_id_csv
@@ -1654,13 +1661,14 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                 self.allocated = allocated
                 self.input_sample_rate = input_sample_rate
                 self.output_format = output_format
-                self.output_ip_address = output_ip_address
+                self.output_multicast = output_multicast
                 self.output_port = output_port
                 self.output_channel = output_channel
                 self.output_enabled = output_enabled
                 self.output_protocol = output_protocol
                 self.output_vlan_enabled = output_vlan_enabled
                 self.output_vlan_tci = output_vlan_tci
+                self.output_vlan = output_vlan
                 self.output_flow = output_flow
                 self.output_timestamp_offset = output_timestamp_offset
                 self.output_endianess = output_endianess
@@ -1711,13 +1719,14 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                 d["allocated"] = self.allocated
                 d["input_sample_rate"] = self.input_sample_rate
                 d["output_format"] = self.output_format
-                d["output_ip_address"] = self.output_ip_address
+                d["output_multicast"] = self.output_multicast
                 d["output_port"] = self.output_port
                 d["output_channel"] = self.output_channel
                 d["output_enabled"] = self.output_enabled
                 d["output_protocol"] = self.output_protocol
                 d["output_vlan_enabled"] = self.output_vlan_enabled
                 d["output_vlan_tci"] = self.output_vlan_tci
+                d["output_vlan"] = self.output_vlan
                 d["output_flow"] = self.output_flow
                 d["output_timestamp_offset"] = self.output_timestamp_offset
                 d["output_endianess"] = self.output_endianess
@@ -1747,7 +1756,7 @@ class MSDD_base(CF__POA.Device, Device, ThreadedComponent):
                 return True
         
             def getMembers(self):
-                return [("tuner_type",self.tuner_type),("available_tuner_type",self.available_tuner_type),("allocation_id_csv",self.allocation_id_csv),("center_frequency",self.center_frequency),("bandwidth",self.bandwidth),("sample_rate",self.sample_rate),("group_id",self.group_id),("rf_flow_id",self.rf_flow_id),("enabled",self.enabled),("complex",self.complex),("gain",self.gain),("available_frequency",self.available_frequency),("available_gain",self.available_gain),("available_sample_rate",self.available_sample_rate),("available_bandwidth",self.available_bandwidth),("decimation",self.decimation),("available_decimation",self.available_decimation),("tuner_number",self.tuner_number),("msdd_channel_type",self.msdd_channel_type),("msdd_installation_name_csv",self.msdd_installation_name_csv),("msdd_registration_name_csv",self.msdd_registration_name_csv),("bits_per_sample",self.bits_per_sample),("adc_meter_values",self.adc_meter_values),("rcvr_gain",self.rcvr_gain),("ddc_gain",self.ddc_gain),("allocated",self.allocated),("input_sample_rate",self.input_sample_rate),("output_format",self.output_format),("output_ip_address",self.output_ip_address),("output_port",self.output_port),("output_channel",self.output_channel),("output_enabled",self.output_enabled),("output_protocol",self.output_protocol),("output_vlan_enabled",self.output_vlan_enabled),("output_vlan_tci",self.output_vlan_tci),("output_flow",self.output_flow),("output_timestamp_offset",self.output_timestamp_offset),("output_endianess",self.output_endianess),("output_mfp_flush",self.output_mfp_flush),("psd_fft_size",self.psd_fft_size),("psd_averages",self.psd_averages),("psd_time_between_ffts",self.psd_time_between_ffts),("psd_output_bin_size",self.psd_output_bin_size),("psd_window_type",self.psd_window_type),("psd_peak_mode",self.psd_peak_mode),("spc_fft_size",self.spc_fft_size),("spc_averages",self.spc_averages),("spc_time_between_ffts",self.spc_time_between_ffts),("spc_output_bin_size",self.spc_output_bin_size),("spc_window_type",self.spc_window_type),("spc_peak_mode",self.spc_peak_mode),("spc_start_frequency",self.spc_start_frequency),("spc_stop_frequency",self.spc_stop_frequency)]
+                return [("tuner_type",self.tuner_type),("available_tuner_type",self.available_tuner_type),("allocation_id_csv",self.allocation_id_csv),("center_frequency",self.center_frequency),("bandwidth",self.bandwidth),("sample_rate",self.sample_rate),("group_id",self.group_id),("rf_flow_id",self.rf_flow_id),("enabled",self.enabled),("complex",self.complex),("gain",self.gain),("available_frequency",self.available_frequency),("available_gain",self.available_gain),("available_sample_rate",self.available_sample_rate),("available_bandwidth",self.available_bandwidth),("decimation",self.decimation),("available_decimation",self.available_decimation),("tuner_number",self.tuner_number),("msdd_channel_type",self.msdd_channel_type),("msdd_installation_name_csv",self.msdd_installation_name_csv),("msdd_registration_name_csv",self.msdd_registration_name_csv),("bits_per_sample",self.bits_per_sample),("adc_meter_values",self.adc_meter_values),("rcvr_gain",self.rcvr_gain),("ddc_gain",self.ddc_gain),("allocated",self.allocated),("input_sample_rate",self.input_sample_rate),("output_format",self.output_format),("output_multicast",self.output_multicast),("output_port",self.output_port),("output_channel",self.output_channel),("output_enabled",self.output_enabled),("output_protocol",self.output_protocol),("output_vlan_enabled",self.output_vlan_enabled),("output_vlan_tci",self.output_vlan_tci),("output_vlan",self.output_vlan),("output_flow",self.output_flow),("output_timestamp_offset",self.output_timestamp_offset),("output_endianess",self.output_endianess),("output_mfp_flush",self.output_mfp_flush),("psd_fft_size",self.psd_fft_size),("psd_averages",self.psd_averages),("psd_time_between_ffts",self.psd_time_between_ffts),("psd_output_bin_size",self.psd_output_bin_size),("psd_window_type",self.psd_window_type),("psd_peak_mode",self.psd_peak_mode),("spc_fft_size",self.spc_fft_size),("spc_averages",self.spc_averages),("spc_time_between_ffts",self.spc_time_between_ffts),("spc_output_bin_size",self.spc_output_bin_size),("spc_window_type",self.spc_window_type),("spc_peak_mode",self.spc_peak_mode),("spc_start_frequency",self.spc_start_frequency),("spc_stop_frequency",self.spc_stop_frequency)]
 
         frontend_tuner_status = structseq_property(id_="FRONTEND::tuner_status",
                                                    name="frontend_tuner_status",

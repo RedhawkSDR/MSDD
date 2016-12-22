@@ -260,7 +260,7 @@ class PortFRONTENDDigitalTunerIn_implemented(PortFRONTENDDigitalTunerIn_i):
         valid_sr = None
         try:
             if self.parent.frontend_tuner_status[tuner_num].rx_object.is_digital():
-                valid_sr = self.parent.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(sr, self.parent.frontend_tuner_status[tuner_num].sample_rate_tolerance)
+                valid_sr = self.parent.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(sr, 0)
                 self.parent.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
             if self.parent.frontend_tuner_status[tuner_num].rx_object.is_spectral_scan():
                 startFreq = self.parent.frontend_tuner_status[tuner_num].center_frequency - sr /2.0
