@@ -2,12 +2,12 @@
 
 if [ "$1" = "rpm" ]; then
     # A very simplistic RPM build scenario
-    if [ -e MSDD.spec ]; then
+    if [ -e rh.MSDD.spec ]; then
         mydir=`dirname $0`
         tmpdir=`mktemp -d`
-        cp -r ${mydir} ${tmpdir}/MSDD-2.4.1
-        tar czf ${tmpdir}/MSDD-2.4.1.tar.gz --exclude=".svn" -C ${tmpdir} MSDD-2.4.1
-        rpmbuild -ta ${tmpdir}/MSDD-2.4.1.tar.gz
+        cp -r ${mydir} ${tmpdir}/rh.MSDD-2.4.1
+        tar czf ${tmpdir}/rh.MSDD-2.4.1.tar.gz --exclude=".svn" -C ${tmpdir} rh.MSDD-2.4.1
+        rpmbuild -ta ${tmpdir}/rh.MSDD-2.4.1.tar.gz
         rm -rf $tmpdir
     else
         echo "Missing RPM spec file in" `pwd`

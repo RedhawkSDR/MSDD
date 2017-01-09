@@ -2,9 +2,9 @@
 ACLOCAL_AMFLAGS = -I m4 -I${OSSIEHOME}/share/aclocal/ossie
 AUTOMAKE_OPTIONS = subdir-objects
 
-xmldir = $(prefix)/dev/devices/MSDD/
+xmldir = $(prefix)/dev/devices/rh/MSDD/
 dist_xml_DATA = ../MSDD.scd.xml ../MSDD.prf.xml ../MSDD.spd.xml
-devdir = $(prefix)/dev/devices/MSDD/python/
+devdir = $(prefix)/dev/devices/rh/MSDD/python/
 
 distclean-local:
 	rm -rf m4

@@ -10,7 +10,7 @@ Prefix:         %{_prefix}
 %define _mandir        %{_prefix}/man
 %define _infodir       %{_prefix}/info
 
-Name:           MSDD
+Name:           rh.MSDD
 Version:        2.4.1
 Release:        1%{?dist}
 Summary:        Device %{name}
@@ -45,7 +45,7 @@ Device %{name}
 # Implementation python
 pushd python
 ./reconf
-%define _bindir %{_prefix}/dev/devices/MSDD/python
+%define _bindir %{_prefix}/dev/devices/rh/MSDD/python
 %configure
 make %{?_smp_mflags}
 popd
@@ -55,7 +55,7 @@ popd
 rm -rf $RPM_BUILD_ROOT
 # Implementation python
 pushd python
-%define _bindir %{_prefix}/dev/devices/MSDD/python
+%define _bindir %{_prefix}/dev/devices/rh/MSDD/python
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
@@ -66,9 +66,10 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,redhawk,redhawk,-)
-%dir %{_prefix}/dev/devices/MSDD
-%{_prefix}/dev/devices/MSDD/MSDD.scd.xml
-%{_prefix}/dev/devices/MSDD/MSDD.prf.xml
-%{_prefix}/dev/devices/MSDD/MSDD.spd.xml
-%{_prefix}/dev/devices/MSDD/python
+%dir %{_prefix}/dev/devices/rh
+%dir %{_prefix}/dev/devices/rh/MSDD
+%{_prefix}/dev/devices/rh/MSDD/MSDD.scd.xml
+%{_prefix}/dev/devices/rh/MSDD/MSDD.prf.xml
+%{_prefix}/dev/devices/rh/MSDD/MSDD.spd.xml
+%{_prefix}/dev/devices/rh/MSDD/python
 

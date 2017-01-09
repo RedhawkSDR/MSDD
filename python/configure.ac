@@ -1,4 +1,4 @@
-AC_INIT(MSDD, 2.4.1)
+AC_INIT(rh.MSDD, 2.4.1)
 AM_INIT_AUTOMAKE([nostdinc foreign])
 AC_CONFIG_MACRO_DIR([m4])
 
