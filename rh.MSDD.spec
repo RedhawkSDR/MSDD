@@ -11,7 +11,7 @@ Prefix:         %{_prefix}
 %define _infodir       %{_prefix}/info
 
 Name:           rh.MSDD
-Version:        2.4.1
+Version:        3.0.0
 Release:        1%{?dist}
 Summary:        Device %{name}
 
