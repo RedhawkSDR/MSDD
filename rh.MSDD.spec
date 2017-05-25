@@ -66,8 +66,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,redhawk,redhawk,-)
-%dir %{_prefix}/dev/devices/rh
-%dir %{_prefix}/dev/devices/rh/MSDD
+%dir %{_sdrroot}/dev/devices/rh
+%dir %{_sdrroot}/dev/devices/rh/MSDD
 %{_prefix}/dev/devices/rh/MSDD/MSDD.scd.xml
 %{_prefix}/dev/devices/rh/MSDD/MSDD.prf.xml
 %{_prefix}/dev/devices/rh/MSDD/MSDD.spd.xml

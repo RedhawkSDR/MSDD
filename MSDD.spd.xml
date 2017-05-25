@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE softpkg PUBLIC "-//JTRS//DTD SCA V2.2.2 SPD//EN" "softpkg.dtd">
-<softpkg id="DCE:3d7435a3-f6cc-401d-8ab6-81ad2c69fe58" name="rh.MSDD" type="2.0.2" version="3.0.0">
+<softpkg id="DCE:b95bd700-711c-49e7-a25a-6dc542d6b703" name="rh.MSDD" type="2.0.5" version="3.0.0">
   <title></title>
   <author>
     <name>null</name>
@@ -13,14 +13,14 @@
     <localfile name="MSDD.scd.xml"/>
   </descriptor>
   <implementation id="python">
-    <description>Device implementation for the MSDD-X000 series radios with FACTORY load.  Now FrontEnd2.0 interfaces and REDHAWK 1.8.X compliant.</description>
+    <description>The implementation contains descriptive information about the template for a software resource.</description>
     <code type="Executable">
       <localfile name="python"/>
       <entrypoint>python/MSDD.py</entrypoint>
     </code>
     <programminglanguage name="Python"/>
     <humanlanguage name="EN"/>
-    <runtime name="python" version="2.4.4"/>
+    <runtime name="python" version="2.6.6"/>
     <os name="Linux"/>
   </implementation>
 </softpkg>

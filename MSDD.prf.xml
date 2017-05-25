@@ -396,145 +396,95 @@ and comprise it unless you looking for the strongest signal.</description>
     </simple>
     <configurationkind kindtype="property"/>
   </struct>
-  <struct id="FRONTEND::tuner_allocation" mode="readwrite" name="frontend_tuner_allocation">
-    <simple id="FRONTEND::tuner_allocation::tuner_type" mode="readwrite" name="tuner_type" type="string">
-      <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
-      <value></value>
-      <action type="external"/>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::allocation_id" mode="readwrite" name="allocation_id" type="string">
-      <description>The allocation_id set by the caller. Used by the caller to reference the device uniquely</description>
-      <value></value>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::center_frequency" mode="readwrite" name="center_frequency" type="double">
-      <description>Requested center frequency.</description>
-      <value>0.0</value>
-      <units>Hz</units>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::bandwidth" mode="readwrite" name="bandwidth" type="double">
-      <description>Requested Bandwidth</description>
-      <value>0.0</value>
-      <units>Hz</units>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::bandwidth_tolerance" mode="readwrite" name="bandwidth_tolerance" type="double">
-      <description>Allowable Percent above requested bandwidth  (ie - 100 would be up to twice)</description>
-      <value>10.0</value>
-      <units>percent</units>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::sample_rate" mode="readwrite" name="sample_rate" type="double">
-      <description>Requested sample rate. This can be ignored for such devices as analog tuners</description>
-      <value>0.0</value>
-      <units>sps</units>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::sample_rate_tolerance" mode="readwrite" name="sample_rate_tolerance" type="double">
-      <description>Allowable Percent above requested sample rate (ie - 100 would be up to twice)</description>
-      <value>10.0</value>
-      <units>percent</units>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::device_control" mode="readwrite" name="device_control" type="boolean">
-      <description>True: Has control over the device to make changes
-False: Does not need control and can just attach to any currently tasked device that satisfies the parameters (essentually a listener)</description>
-      <value>true</value>
-      <action type="external"/>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::group_id" mode="readwrite" name="group_id" type="string">
-      <description>Unique identifier that specifies a group of device. Must match group_id on the device</description>
-      <value></value>
-    </simple>
-    <simple id="FRONTEND::tuner_allocation::rf_flow_id" mode="readwrite" name="rf_flow_id" type="string">
-      <description>Optional. Specifies a certain RF flow to allocate against. If left empty, it will match all frontend devices.</description>
-      <value></value>
-    </simple>
-    <configurationkind kindtype="allocation"/>
-  </struct>
-  <struct id="FRONTEND::listener_allocation" mode="readwrite" name="frontend_listener_allocation">
-    <description>Allocates a listener (subscriber) based off a previous allocation </description>
-    <simple id="FRONTEND::listener_allocation::existing_allocation_id" mode="readwrite" name="existing_allocation_id" type="string">
-      <action type="external"/>
-    </simple>
-    <simple id="FRONTEND::listener_allocation::listener_allocation_id" mode="readwrite" name="listener_allocation_id" type="string">
-      <action type="external"/>
-    </simple>
-    <configurationkind kindtype="allocation"/>
-  </struct>
   <structsequence id="FRONTEND::tuner_status" mode="readonly" name="frontend_tuner_status">
-    <struct id="frontend_tuner_status_struct" mode="readonly">
-      <simple id="FRONTEND::tuner_status::tuner_type" mode="readwrite" name="tuner_type" type="string">
-        <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
-        <value></value>
-        <action type="external"/>
+    <description>Status of each tuner, including entries for both allocated and un-allocated tuners. Each entry represents a single tuner.</description>
+    <struct id="FRONTEND::tuner_status_struct" name="frontend_tuner_status_struct">
+      <simple id="FRONTEND::tuner_status::allocation_id_csv" name="allocation_id_csv" type="string">
+        <description>Comma separated list of current Allocation IDs.</description>
       </simple>
-      <simple id="FRONTEND::tuner_status::available_tuner_type" mode="readwrite" name="available_tuner_type" type="string">
-        <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
-        <value></value>
-        <action type="external"/>
-      </simple>
-      <simple id="FRONTEND::tuner_status::allocation_id_csv" mode="readwrite" name="allocation_id_csv" type="string">
-        <description>Comma separated values of all current allocation ids, both control and listener. The allocation_id set by the caller. Used by the caller to reference the device uniquely</description>
-        <value></value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::center_frequency" mode="readwrite" name="center_frequency" type="double">
-        <description>Current center frequency in Hz.</description>
-        <value>0.0</value>
+      <simple id="FRONTEND::tuner_status::available_bandwidth" name="available_bandwidth" type="string">
+        <description>Available bandwidth (Hz) in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field.</description>
         <units>Hz</units>
       </simple>
-      <simple id="FRONTEND::tuner_status::bandwidth" mode="readwrite" name="bandwidth" type="double">
-        <description>Current Bandwidth in Hz.</description>
-        <value>0.0</value>
+      <simple id="FRONTEND::tuner_status::available_frequency" name="available_frequency" type="string">
+        <description>Available frequencies (Hz) in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field.</description>
         <units>Hz</units>
       </simple>
-      <simple id="FRONTEND::tuner_status::sample_rate" mode="readwrite" name="sample_rate" type="double">
-        <description>Current sample rate in sps. This can be ignored for such devices as analog tuners.</description>
-        <value>0.0</value>
-        <units>sps</units>
-      </simple>
-      <simple id="FRONTEND::tuner_status::group_id" mode="readwrite" name="group_id" type="string">
-        <description>Unique identifier that specifies a group of device. Must match group_id on the device</description>
-        <value></value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::rf_flow_id" mode="readwrite" name="rf_flow_id" type="string">
-        <description>Specifies a certain RF flow to allocate against.</description>
-        <value></value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::enabled" mode="readwrite" name="enabled" type="boolean">
-        <description>True means tuner is enabled. Can be allocated but disabled.</description>
-        <value>false</value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::complex" mode="readwrite" name="complex" type="boolean">
-        <description>True if output is complex</description>
-        <value>false</value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::gain" mode="readwrite" name="gain" type="double">
-        <description>Current gain</description>
-        <value>0.0</value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::available_frequency" mode="readwrite" name="available_frequency" type="string">
-        <description>Available frequencies in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
-        <value></value>
-        <units>Hz</units>
-      </simple>
-      <simple id="FRONTEND::tuner_status::available_gain" mode="readwrite" name="available_gain" type="string">
-        <description>Available gain in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
-        <value></value>
+      <simple id="FRONTEND::tuner_status::available_gain" name="available_gain" type="string">
+        <description>Available gain (dB) in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field.</description>
         <units>dB</units>
       </simple>
-      <simple id="FRONTEND::tuner_status::available_sample_rate" mode="readwrite" name="available_sample_rate" type="string">
-        <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
-        <value></value>
+      <simple id="FRONTEND::tuner_status::available_sample_rate" name="available_sample_rate" type="string">
+        <description>Available sample_rate (sps) in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field.</description>
         <units>sps</units>
       </simple>
-      <simple id="FRONTEND::tuner_status::available_bandwidth" mode="readwrite" name="available_bandwidth" type="string">
-        <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
-        <value></value>
+      <simple id="FRONTEND::tuner_status::bandwidth" name="bandwidth" type="double">
+        <description>Current bandwidth in Hz</description>
         <units>Hz</units>
       </simple>
-      <simple id="FRONTEND::tuner_status::decimation" mode="readwrite" name="decimation" type="short"/>
+      <simple id="FRONTEND::tuner_status::center_frequency" name="center_frequency" type="double">
+        <description>Current center frequency in Hz.</description>
+        <units>Hz</units>
+      </simple>
+      <simple id="FRONTEND::tuner_status::complex" name="complex" type="boolean">
+        <description>Indicates if the output data is complex.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::decimation" name="decimation" type="long">
+        <description>Current decimation of tuner. For DDC tuners, this is the ratio of input sample rate to output sample rate regardless of data format.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::enabled" name="enabled" type="boolean">
+        <description>Indicates if tuner is enabled, in reference to the output state of the tuner.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::gain" name="gain" type="double">
+        <description>Current gain in dB.</description>
+        <units>dB</units>
+      </simple>
+      <simple id="FRONTEND::tuner_status::group_id" name="group_id" type="string">
+        <description>Unique ID that specifies a group of Device.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::output_format" name="output_format" type="string">
+        <description>Indicates the SDDS digraph that describes the current output data format.</description>
+        <enumerations>
+          <enumeration label="SP" value="SP"/>
+          <enumeration label="SB" value="SB"/>
+          <enumeration label="SI" value="SI"/>
+          <enumeration label="SL" value="SL"/>
+          <enumeration label="SX" value="SX"/>
+          <enumeration label="SF" value="SF"/>
+          <enumeration label="SD" value="SD"/>
+          <enumeration label="CB" value="CB"/>
+          <enumeration label="CI" value="CI"/>
+          <enumeration label="CL" value="CL"/>
+          <enumeration label="CX" value="CX"/>
+          <enumeration label="CF" value="CF"/>
+          <enumeration label="CD" value="CD"/>
+        </enumerations>
+      </simple>
+      <simple id="FRONTEND::tuner_status::output_multicast" name="output_multicast" type="string">
+        <description>Multicast address for SDDS output.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::output_port" name="output_port" type="long">
+        <description>Port number for SDDS output.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::output_vlan" name="output_vlan" type="long">
+        <description>VLAN number for SDDS output. A value of zero (0) indicates no VLAN is used.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::rf_flow_id" name="rf_flow_id" type="string">
+        <description>Specifies a certain RF flow to allocate against.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::sample_rate" name="sample_rate" type="double">
+        <description>Current sample rate in samples per second.</description>
+        <units>sps</units>
+      </simple>
+      <simple id="FRONTEND::tuner_status::tuner_number" name="tuner_number" type="short">
+        <description>Physical tuner ID.</description>
+      </simple>
+      <simple id="FRONTEND::tuner_status::tuner_type" name="tuner_type" type="string">
+        <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
+      </simple>
       <simple id="FRONTEND::tuner_status::available_decimation" mode="readwrite" name="available_decimation" type="string">
         <description>Available sample rates in range (XX-YY) or csv (X,Y,Z) format. Do not put units in field</description>
         <value></value>
-      </simple>
-      <simple id="FRONTEND::tuner_status::tuner_number" mode="readonly" name="tuner_number" type="short">
-        <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::msdd_channel_type" mode="readonly" name="msdd_channel_type" type="string">
         <action type="external"/>
@@ -563,17 +513,6 @@ False: Does not need control and can just attach to any currently tasked device 
       <simple id="FRONTEND::tuner_status::input_sample_rate" mode="readonly" name="input_sample_rate" type="double">
         <action type="external"/>
       </simple>
-      <simple id="FRONTEND::tuner_status::output_format" mode="readonly" name="output_format" type="string">
-        <description>Two character SDDS digraph.</description>
-        <action type="external"/>
-      </simple>
-      <simple id="FRONTEND::tuner_status::output_multicast" mode="readonly" name="output_multicast" type="string">
-        <action type="external"/>
-      </simple>
-      <simple id="FRONTEND::tuner_status::output_port" mode="readonly" name="output_port" type="long">
-        <description>Output multicast port</description>
-        <action type="external"/>
-      </simple>
       <simple id="FRONTEND::tuner_status::output_channel" mode="readonly" name="output_channel" type="string">
         <action type="external"/>
       </simple>
@@ -587,11 +526,6 @@ False: Does not need control and can just attach to any currently tasked device 
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_vlan_tci" mode="readonly" name="output_vlan_tci" type="string">
-        <action type="external"/>
-      </simple>
-      <simple id="FRONTEND::tuner_status::output_vlan" mode="readwrite" name="output_vlan" type="long">
-        <value>0</value>
-        <kind kindtype="property"/>
         <action type="external"/>
       </simple>
       <simple id="FRONTEND::tuner_status::output_flow" mode="readonly" name="output_flow" type="string">
@@ -627,6 +561,10 @@ False: Does not need control and can just attach to any currently tasked device 
       <simple id="FRONTEND::tuner_status::spc_window_type" name="spc_window_type" type="string"/>
       <simple id="FRONTEND::tuner_status::spc_peak_mode" name="spc_peak_mode" type="string"/>
       <simple id="FRONTEND::tuner_status::spc_start_frequency" name="spc_start_frequency" type="double"/>
+      <simple id="FRONTEND::tuner_status::available_tuner_type" mode="readwrite" name="available_tuner_type" type="string">
+        <kind kindtype="property"/>
+        <action type="external"/>
+      </simple>
       <simple id="FRONTEND::tuner_status::spc_stop_frequency" name="spc_stop_frequency" type="double"/>
       <configurationkind kindtype="configure"/>
     </struct>
@@ -696,4 +634,58 @@ False: Does not need control and can just attach to any currently tasked device 
     </simple>
     <configurationkind kindtype="property"/>
   </struct>
+  <struct id="FRONTEND::listener_allocation" name="frontend_listener_allocation">
+    <description>Frontend Interfaces v2 listener allocation structure</description>
+    <simple id="FRONTEND::listener_allocation::existing_allocation_id" type="string"/>
+    <simple id="FRONTEND::listener_allocation::listener_allocation_id" type="string"/>
+    <configurationkind kindtype="allocation"/>
+  </struct>
+  <struct id="FRONTEND::tuner_allocation" name="frontend_tuner_allocation">
+    <description>Frontend Interfaces v2 main allocation structure</description>
+    <simple id="FRONTEND::tuner_allocation::tuner_type" name="tuner_type" type="string">
+      <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::allocation_id" name="allocation_id" type="string">
+      <description>The allocation_id set by the caller. Used by the caller to reference the allocation uniquely</description>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::center_frequency" name="center_frequency" type="double">
+      <description>Requested center frequency</description>
+      <units>Hz</units>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::bandwidth" name="bandwidth" type="double">
+      <description>Requested bandwidth (+/- the tolerance)</description>
+      <units>Hz</units>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::bandwidth_tolerance" name="bandwidth_tolerance" type="double">
+      <description>Allowable Percent above requested bandwidth  (ie - 100 would be up to twice)</description>
+      <units>percent</units>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::sample_rate" name="sample_rate" type="double">
+      <description>Requested sample rate (+/- the tolerance). This can be ignored for such devices as analog tuners</description>
+      <units>Hz</units>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::sample_rate_tolerance" name="sample_rate_tolerance" type="double">
+      <description>Allowable Percent above requested sample rate (ie - 100 would be up to twice)</description>
+      <units>percent</units>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::device_control" name="device_control" type="boolean">
+      <description>True: Has control over the device to make changes
+False: Does not need control and can just attach to any currently tasked device that satisfies the parameters (essentually a listener)</description>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::group_id" name="group_id" type="string">
+      <description>Unique identifier that specifies the group a device must be in. Must match group_id on the device</description>
+    </simple>
+    <simple id="FRONTEND::tuner_allocation::rf_flow_id" name="rf_flow_id" type="string">
+      <description>Optional. Specifies the RF flow of a specific input source to allocate against. If left empty, it will match all FrontEnd devices.</description>
+    </simple>
+    <configurationkind kindtype="allocation"/>
+  </struct>
+  <structsequence id="connectionTable" mode="readonly">
+    <struct id="connectionTable::connection_descriptor" name="connection_descriptor">
+      <simple id="connectionTable::connection_id" name="connection_id" type="string"/>
+      <simple id="connectionTable::stream_id" name="stream_id" type="string"/>
+      <simple id="connectionTable::port_name" name="port_name" type="string"/>
+    </struct>
+    <configurationkind kindtype="property"/>
+  </structsequence>
 </properties>
