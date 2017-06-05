@@ -114,59 +114,59 @@ package:release:el7:rh2.1:
   only:
     - tags
 
-test:ci:el6:rh2.1:
-  variables:
-    dist: el6
-    arch: x86_64
-    redhawk_version: 2.1-nightly
-  <<: *test
-  only:
-    - branches
+#test:ci:el6:rh2.1:
+#  variables:
+#    dist: el6
+#    arch: x86_64
+#    redhawk_version: 2.1-nightly
+#  <<: *test
+#  only:
+#    - branches
 
-test:release:el6:rh2.1:
-  variables:
-    dist: el6
-    arch: x86_64
-    redhawk_version: 2.1.0
-  <<: *test
-  only:
-    - tags
+#test:release:el6:rh2.1:
+#  variables:
+#    dist: el6
+#    arch: x86_64
+#    redhawk_version: 2.1.0
+#  <<: *test
+#  only:
+#    - tags
 
-test:ci:el6-i386:rh2.1:
-  variables:
-    dist: el6
-    arch: i686
-    redhawk_version: 2.1-nightly
-  <<: *test
-  only:
-    - branches
+#test:ci:el6-i386:rh2.1:
+#  variables:
+#    dist: el6
+#    arch: i686
+#    redhawk_version: 2.1-nightly
+#  <<: *test
+#  only:
+#    - branches
 
-test:release:el6-i386:rh2.1:
-  variables:
-    dist: el6
-    arch: i686
-    redhawk_version: 2.1.0
-  <<: *test
-  only:
-    - tags
+#test:release:el6-i386:rh2.1:
+#  variables:
+#    dist: el6
+#    arch: i686
+#    redhawk_version: 2.1.0
+#  <<: *test
+#  only:
+#    - tags
 
-test:ci:el7:rh2.1:
-  variables:
-    dist: el7
-    arch: x86_64
-    redhawk_version: 2.1-nightly
-  <<: *test
-  only:
-    - branches
+#test:ci:el7:rh2.1:
+#  variables:
+#    dist: el7
+#    arch: x86_64
+#    redhawk_version: 2.1-nightly
+#  <<: *test
+#  only:
+#    - branches
 
-test:release:el7:rh2.1:
-  variables:
-    dist: el7
-    arch: x86_64
-    redhawk_version: 2.1.0
-  <<: *test
-  only:
-    - tags
+#test:release:el7:rh2.1:
+#  variables:
+#    dist: el7
+#    arch: x86_64
+#    redhawk_version: 2.1.0
+#  <<: *test
+#  only:
+#    - tags
 
 deploy:
   image: centos:7
