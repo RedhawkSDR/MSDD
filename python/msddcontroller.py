@@ -988,7 +988,7 @@ class DdcBaseModule(baseModule):
     def setFrequency_Hz(self, freq):
         retVal = True
         try:
-            retVal =  self.setter_with_validation(float(freq), self._setFrequency_Hz, self.getFrequency_Hz,100)
+            retVal =  self.setter_with_validation(float(freq), self._setFrequency_Hz, self.getFrequency_Hz,1000)
         except NotImplementedError:
             retVal = True
         except:
@@ -1279,7 +1279,7 @@ class NBDDCModule(DdcBaseModule):
     def get_valid_frequency(self,center_frequency_hz,center_frequency_tolerance_perc=.01):
         return self.get_value_valid(center_frequency_hz, center_frequency_tolerance_perc, self.min_frequency_hz, self.max_frequency_hz, self.step_frequency_hz)
     def setFrequency_Hz(self, frequency_hz):
-        return self.setter_with_validation(float(frequency_hz), self._setFrequency_Hz, self.getFrequency_Hz,100)
+        return self.setter_with_validation(float(frequency_hz), self._setFrequency_Hz, self.getFrequency_Hz,1000)
    
    
     def setBandwidth_Hz(self, bw):
@@ -1332,7 +1332,7 @@ class SoftDdcBaseModule(DdcBaseModule):
     def get_valid_frequency(self,center_frequency_hz,center_frequency_tolerance_perc=.01):
         return self.get_value_valid(center_frequency_hz, center_frequency_tolerance_perc, self.min_frequency_hz, self.max_frequency_hz, self.step_frequency_hz)
     def setFrequency_Hz(self, frequency_hz):
-        return self.setter_with_validation(float(frequency_hz), self._setFrequency_Hz, self.getFrequency_Hz,100)
+        return self.setter_with_validation(float(frequency_hz), self._setFrequency_Hz, self.getFrequency_Hz,1000)
     def _setBandwidth_Hz(self, bandwidth_hz):
         return self.setSampleRate(bandwidth_hz)
 
