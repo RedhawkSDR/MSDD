@@ -2728,7 +2728,7 @@ class FrontendTunerTests(unittest.TestCase):
             
             allocations = []
             error = False
-            numDDCs = 16 
+            numDDCs = DEVICE_INFO['capabilities'][0]["DDC"]["NUMDDCs"]
             for tuner_num in xrange(0,numDDCs):
                 t2 = generateDDCRequest(idx=0,cf=t1['CF']+5000*tuner_num)
                 allocations.append(generateTunerAlloc(t2))

@@ -271,9 +271,10 @@ dut_config['MSDD'] = {
             'DDC': {
                 'COMPLEX' : True,
                 'CF'      : [30e6, 6e9],
-                'BW'      : [8e3, 8e3],
-                'SR'      : [10e3, 10e3],
-                'GAIN'    : [-48.0, 12.0]
+                'BW'      : [80e3, 80e3],
+                'SR'      : [100e3, 100e3],
+                'GAIN'    : [-48.0, 12.0],
+                'NUMDDCs' : 16,
             }
         }
     ]
