@@ -48,7 +48,7 @@ dut_config = {}
 DUT = 'MSDD'
 
 # Optional:
-DEBUG_LEVEL = 3    # typical values include 0, 1, 2, 3, 4 and 5
+DEBUG_LEVEL = 4    # typical values include 0, 1, 2, 3, 4 and 5
 DUT_INDEX = None
 DUT_IP_ADDR = "192.168.103.250"
 DUT_PORT = None
@@ -241,6 +241,42 @@ dut_config['MSDD'] = {
                 'msdd_output_configuration::tuner_number'    : 0,
                 'msdd_output_configuration::protocol'        : 'UDP_SDDS',
                 'msdd_output_configuration::ip_address'      : MCAST_GROUP or '234.0.0.100',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+            {
+                'msdd_output_configuration::tuner_number'    : 1,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'1',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+            {
+                'msdd_output_configuration::tuner_number'    : 2,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'2',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+            {
+                'msdd_output_configuration::tuner_number'    : 3,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'3',
                 'msdd_output_configuration::port'            : MCAST_PORT or 0,
                 'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
                 'msdd_output_configuration::enabled'         : True,

@@ -2460,20 +2460,7 @@ class MSDDRadio:
                 reg_name = self.stream_router.getRegistrationName(module)
                 if self.registration_hash.has_key(module):
                     continue
-                ch_list = self.stream_router.getChannelList(reg_name)
-##                DONT THINK I CAN ACTUALLY DO THIS
-#                if str(module) == "FFT":
-#                    unregistered_mods = 32-len(ch_list)
-#                    unregistered_mods = 1
-#                    print "UNREG MODULES: " + str(unregistered_mods)
-#                    if unregistered_mods > 0:
-#                        try:
-#                            self.stream_router.registerModule("FFT", "FFT", len(ch_list), unregistered_mods)
-#                            ch_list = self.stream_router.getChannelList(reg_name)      
-#                            print "REG NOW: " + str(len(ch_list))
-#                        except:
-#                            None    
-#                
+                ch_list = self.stream_router.getChannelList(reg_name)               
                 self.registration_hash[module] = []
                 for channel in ch_list:
                     reg_full = str(reg_name) + ':' + str(channel)
@@ -2584,15 +2571,32 @@ class MSDDRadio:
                     rx_mod.msdd_rx_type = self.MSDDRXTYPE_DIGITAL_RX
                     rx_mod.digital_rx_object = self.wb_ddc_modules[current_position]
                     rx_mod.output_object = self.get_corresponding_output_module_object(rx_mod.digital_rx_object)
-                    self.output_object_container.mark_as_used(rx_mod.output_object)
+                    if rx_mod.output_object == None:
+                        output_obj = self.output_object_container.get_object()
+                        if output_obj == None:
+                            print "ERROR: CAN NOT GET FREE OUTPUT OBJECT"
+                            continue
+                        self.stream_router.linkModules(rx_mod.digital_rx_object.object.full_reg_name, output_obj.object.full_reg_name)
+                        self.output_object_container.mark_as_used(output_obj)
+                        rx_mod.output_object = self.get_corresponding_output_module_object(rx_mod.digital_rx_object)
                 self.update_rx_channel_mapping(rx_mod, len(self.rx_channels))
                 self.rx_channels.append(rx_mod)
+        
         for modules in [self.nb_ddc_modules]:
             for mod in modules:
                 rx_mod = self.msdd_channel_module(mod.registration_name, mod.installation_name, mod.channel_number,len(self.rx_channels), True, self.MSDDRXTYPE_HW_DDC)
                 rx_mod.digital_rx_object = mod
-                rx_mod.output_object = self.get_corresponding_output_module_object(rx_mod.digital_rx_object)
-                self.output_object_container.mark_as_used(rx_mod.output_object)
+                output_obj = self.get_corresponding_output_module_object(mod)
+                if output_obj == None:
+                    output_obj_unused = self.output_object_container.get_object()
+                    if output_obj_unused == None:
+                        print "ERROR: CAN NOT GET FREE OUTPUT OBJECT"
+                        continue
+                    self.stream_router.linkModules(mod.object.full_reg_name, output_obj_unused.object.full_reg_name)
+                    self.output_object_container.mark_as_used(output_obj_unused)
+                else:
+                    self.output_object_container.mark_as_used(output_obj)
+                rx_mod.output_object = self.get_corresponding_output_module_object(mod)
                 self.update_rx_channel_mapping(rx_mod, len(self.rx_channels))
                 self.rx_channels.append(rx_mod)
                 
@@ -2600,8 +2604,17 @@ class MSDDRadio:
             for mod in modules:
                 rx_mod = self.msdd_channel_module(mod.registration_name, mod.installation_name, mod.channel_number,len(self.rx_channels), False, self.MSDDRXTYPE_SW_DDC)
                 rx_mod.digital_rx_object = mod
-                rx_mod.output_object = self.get_corresponding_output_module_object(rx_mod.digital_rx_object)
-                self.output_object_container.mark_as_used(rx_mod.output_object)
+                output_obj = self.get_corresponding_output_module_object(mod)
+                if output_obj == None:
+                    output_obj_unused = self.output_object_container.get_object()
+                    if output_obj_unused == None:
+                        print "ERROR: CAN NOT GET FREE OUTPUT OBJECT"
+                        continue
+                    self.stream_router.linkModules(mod.object.full_reg_name, output_obj_unused.object.full_reg_name)
+                    self.output_object_container.mark_as_used(output_obj_unused)
+                else:
+                    self.output_object_container.mark_as_used(output_obj)
+                rx_mod.output_object = self.get_corresponding_output_module_object(mod)
                 self.update_rx_channel_mapping(rx_mod, len(self.rx_channels))
                 self.rx_channels.append(rx_mod)
                 
@@ -2610,17 +2623,18 @@ class MSDDRadio:
                 self.stream_router.unlinkModule(mod.object.full_reg_name)
                 output_obj = self.get_corresponding_output_module_object(mod)
                 if output_obj == None:
-                    output_obj = self.output_object_container.get_object()
-                    if output_obj == None:
+                    output_obj_unused = self.output_object_container.get_object()
+                    if output_obj_unused == None:
                         print "ERROR: CAN NOT GET FREE OUTPUT OBJECT"
                         continue
-#                    print "LINKING MODULE: " + str(output_obj.object.full_reg_name) + " with " + str(mod.object.full_reg_name)
-                    self.stream_router.linkModules(mod.object.full_reg_name, output_obj.object.full_reg_name)
-                self.output_object_container.mark_as_used(output_obj)
+                    self.stream_router.linkModules(mod.object.full_reg_name, output_obj_unused.object.full_reg_name)
+                    self.output_object_container.mark_as_used(output_obj_unused)
+                else:
+                    self.output_object_container.mark_as_used(output_obj)
+                rx_mod.output_object = self.get_corresponding_output_module_object(mod)
                 
                 rx_mod = self.msdd_channel_module(mod.registration_name, mod.installation_name, mod.channel_number,len(self.rx_channels), False, self.MSDDRXTYPE_FFT)
                 rx_mod.fft_object = mod
-                rx_mod.output_object = output_obj
                 self.update_rx_channel_mapping(rx_mod, len(self.rx_channels))
                 self.rx_channels.append(rx_mod)
 

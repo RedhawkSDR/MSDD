@@ -571,9 +571,7 @@ and comprise it unless you looking for the strongest signal.</description>
     <configurationkind kindtype="property"/>
   </structsequence>
   <struct id="msdd_status" mode="readonly">
-    <simple id="msdd_status::connected" name="connected" type="boolean">
-      <value>False</value>
-    </simple>
+    <simple id="msdd_status::connected" name="connected" type="boolean"/>
     <simple id="msdd_status::ip_address" name="ip_address" type="string"/>
     <simple id="msdd_status::port" name="port" type="string"/>
     <simple id="msdd_status::model" name="model" type="string"/>

@@ -143,6 +143,7 @@ class MSDD_i(MSDD_base):
         self.device_rf_info_pkt=None
         self.dig_tuner_base_nums= []
         
+        self.addPropertyChangeListener("msdd_configuration",self.msdd_configuration_changed)
         self.addPropertyChangeListener("msdd_gain_configuration",self.msdd_gain_configuration_changed)
         self.addPropertyChangeListener("clock_ref",self.clock_ref_changed)
         self.addPropertyChangeListener("advanced",self.advanced_changed)
@@ -151,24 +152,24 @@ class MSDD_i(MSDD_base):
         self.addPropertyChangeListener("msdd_psd_configuration",self.msdd_psd_configuration_changed)
         self.addPropertyChangeListener("msdd_spc_configuration",self.msdd_spc_configuration_changed)
         self.addPropertyChangeListener("msdd_time_of_day_configuration",self.msdd_time_of_day_configuration_changed)
-        self.addPropertyChangeListener("msdd_configuration",self.msdd_configuration_changed)
         self.addPropertyChangeListener("msdd_advanced_debugging_tools",self.msdd_advanced_debugging_tools_changed)
         
-        self.msdd_configuration_changed(self.msdd_configuration,self.msdd_configuration)
-        self.msdd_gain_configuration_changed(self.msdd_gain_configuration, self.msdd_gain_configuration)
-        self.clock_ref_changed(self.clock_ref, self.clock_ref)
-        self.advanced_changed(self.advanced,self.advanced)
-        self.msdd_output_configuration_changed(self.msdd_output_configuration,self.msdd_output_configuration)
-        self.msdd_block_output_configuration_changed(self.msdd_block_output_configuration,self.msdd_block_output_configuration)
-        self.msdd_psd_configuration_changed(self.msdd_psd_configuration,self.msdd_psd_configuration)
-        self.msdd_spc_configuration_changed(self.msdd_spc_configuration,self.msdd_spc_configuration)
-        self.msdd_time_of_day_configuration_changed(self.msdd_time_of_day_configuration,self.msdd_time_of_day_configuration)
-        self.msdd_advanced_debugging_tools_changed(self.msdd_advanced_debugging_tools,self.msdd_advanced_debugging_tools )        
+        self.msdd_configuration_changed("msdd_configuration",self.msdd_configuration,self.msdd_configuration)
+        self.msdd_gain_configuration_changed("msdd_gain_configuration",self.msdd_gain_configuration, self.msdd_gain_configuration)
+        self.clock_ref_changed("clock_ref",self.clock_ref, self.clock_ref)
+        self.advanced_changed("advanced",self.advanced,self.advanced)
+        self.msdd_output_configuration_changed("msdd_output_configuration",self.msdd_output_configuration,self.msdd_output_configuration)
+        self.msdd_block_output_configuration_changed("msdd_block_output_configuration",self.msdd_block_output_configuration,self.msdd_block_output_configuration)
+        self.msdd_psd_configuration_changed("msdd_psd_configuration",self.msdd_psd_configuration,self.msdd_psd_configuration)
+        self.msdd_spc_configuration_changed("msdd_spc_configuration",self.msdd_spc_configuration,self.msdd_spc_configuration)
+        self.msdd_time_of_day_configuration_changed("msdd_time_of_day_configuration",self.msdd_time_of_day_configuration,self.msdd_time_of_day_configuration)
+        self.msdd_advanced_debugging_tools_changed("msdd_advanced_debugging_tools",self.msdd_advanced_debugging_tools,self.msdd_advanced_debugging_tools )        
         
         self.tuner_allocation_ids = []
         
         # The device creates the tuner status structure dynamically based on the device it is controlling so we are not using the setNumChannels
         #self.setNumChannels(1, "RX_DIGITIZER");
+        
 
     def getPort(self, name):
         if name == "AnalogTuner_in":
@@ -219,8 +220,8 @@ class MSDD_i(MSDD_base):
                 self.update_msdd_status()
                 self.update_tuner_status()
                 self.update_output_configuration()
-                self.clock_ref_changed(self.clock_ref, self.clock_ref)
-                self.msdd_gain_configuration_changed(self.msdd_gain_configuration, self.msdd_gain_configuration)
+                self.clock_ref_changed("clock_ref",self.clock_ref, self.clock_ref)
+                self.msdd_gain_configuration_changed("msdd_gain_configuration",self.msdd_gain_configuration, self.msdd_gain_configuration)
             except:
                 self._log.exception("UNABLE TO CONNECT TO THE MSDD WITH IP:PORT =  " + str(self.msdd_configuration.msdd_ip_address) + ":" + str(self.msdd_configuration.msdd_port))
                 self.disconnect_from_msdd()
@@ -377,6 +378,7 @@ class MSDD_i(MSDD_base):
                     self.frontend_tuner_status[tuner_num].complex = True
                 #if the tuner is both analog and digital (usually rx_digitizer mode)
                 elif self.frontend_tuner_status[tuner_num].rx_object.is_digital() and  self.frontend_tuner_status[tuner_num].rx_object.is_analog():
+
                     self.frontend_tuner_status[tuner_num].enabled = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.enable;
                     self.frontend_tuner_status[tuner_num].decimation = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.decimation
                     self.frontend_tuner_status[tuner_num].available_decimation = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_decimation
@@ -433,12 +435,14 @@ class MSDD_i(MSDD_base):
                     self.frontend_tuner_status[tuner_num].spc_start_frequency = float(self.frontend_tuner_status[tuner_num].rx_object.spectral_scan_object.object.getMinFrequency())
                     self.frontend_tuner_status[tuner_num].spc_stop_frequency = float(self.frontend_tuner_status[tuner_num].rx_object.spectral_scan_object.object.getMaxFrequency())
                 self.SRIchanged(tuner_num, data_port, fft_port, spc_port)
+
             except Exception, e:
                 self._log.exception((e))
                 self._log.error("ERROR WHEN UPDATING TUNER STATUS FOR TUNER: "+ str(tuner_num))
                 
             
     def update_output_configuration(self, updateTunerStatus=True):
+        self._log.debug("update_output_configuration " )
         if self.MSDD == None:
             return False
     
@@ -521,7 +525,7 @@ class MSDD_i(MSDD_base):
             self.update_tuner_status()
         
         
-        self.msdd_time_of_day_configuration_changed(self.msdd_time_of_day_configuration,  self.msdd_time_of_day_configuration)
+        self.msdd_time_of_day_configuration_changed("msdd_time_of_day_configuration",self.msdd_time_of_day_configuration,  self.msdd_time_of_day_configuration)
         return True
 
 
@@ -549,7 +553,7 @@ class MSDD_i(MSDD_base):
             self._log.warn('Could not set gain value for tuner ' + str(tuner_num))        
 
     
-    def msdd_gain_configuration_changed(self, oldval, newval):
+    def msdd_gain_configuration_changed(self, propid,oldval, newval):
         self.msdd_gain_configuration = newval   
         if self.MSDD == None:
             return
@@ -561,7 +565,7 @@ class MSDD_i(MSDD_base):
     
     
     
-    def clock_ref_changed(self, oldval, newval):
+    def clock_ref_changed(self, propid,oldval, newval):
         self.clock_ref = newval  
         if self.MSDD == None:
             return
@@ -574,7 +578,7 @@ class MSDD_i(MSDD_base):
         self.update_msdd_status()
           
                 
-    def advanced_changed(self, oldval, newval):
+    def advanced_changed(self, propid,oldval, newval):
         self.advanced = newval   
         if self.MSDD != None:
             self.MSDD.com.update_timeout(self.advanced.udp_timeout)
@@ -599,26 +603,26 @@ class MSDD_i(MSDD_base):
             self.frontend_tuner_status[tuner_num].tuner_types = tuner_types
 
     
-    def msdd_output_configuration_changed(self, oldval, newval):
+    def msdd_output_configuration_changed(self, propid, oldval, newval):
         self.msdd_output_configuration = newval
         self.update_output_configuration()
         
-    def msdd_block_output_configuration_changed(self, oldval, newval):
+    def msdd_block_output_configuration_changed(self, propid, oldval, newval):
         self.msdd_block_output_configuration = newval
         self.update_output_configuration()
         
-    def msdd_psd_configuration_changed(self, oldval, newval):
+    def msdd_psd_configuration_changed(self,propid, oldval, newval):
         self.msdd_psd_configuration = newval
         for tuner_num in range(0,len(self.frontend_tuner_status)):
             self.update_fft_configuration(tuner_num)
 
-    def msdd_spc_configuration_changed(self, oldval, newval):
+    def msdd_spc_configuration_changed(self,propid, oldval, newval):
         self.msdd_spc_configuration = newval
         for tuner_num in range(0,len(self.frontend_tuner_status)):
             self.update_spc_configuration(tuner_num)
 
         
-    def msdd_time_of_day_configuration_changed(self, oldval, newval):
+    def msdd_time_of_day_configuration_changed(self,propid, oldval, newval):
         self.msdd_time_of_day_configuration = newval
         if self.MSDD == None:
             return False
@@ -661,14 +665,14 @@ class MSDD_i(MSDD_base):
         self.update_msdd_status()
         
         
-    def msdd_configuration_changed(self, oldval, newval):
+    def msdd_configuration_changed(self, propid,oldval, newval):
         self._log.debug("MSDD Configuration changed. New value: " + str(newval))
         self.msdd_configuration = newval
         if not self.connect_to_msdd(): 
             sleep(0.25)
             self.connect_to_msdd()
         
-    def msdd_advanced_debugging_tools_changed(self, oldval, newval):
+    def msdd_advanced_debugging_tools_changed(self, propid,oldval, newval):
         self.msdd_advanced_debugging_tools = newval
         self.msdd_advanced_debugging_tools.command = str(self.msdd_advanced_debugging_tools.command).rstrip('\n')
        
@@ -859,7 +863,7 @@ class MSDD_i(MSDD_base):
                                                    timeTagValid = True,
                                                    privateInfo = "MSDD Physical Tuner #"+str(tuner_num) )
                
-
+                self._log.debug("calling Port Attach() on ID:"+str(alloc_id))
                 self.port_dataSDDS_out.attach(sdef, alloc_id)
 
                 vita_data_payload_format = BULKIO.VITA49DataPacketPayloadFormat(packing_method_processing_efficient = False,
@@ -1182,24 +1186,24 @@ class MSDD_i(MSDD_base):
             
             ########## BASIC CHECKS FOR TUNER TYPE, RF FLOW ID AND GROUP ID ##########
             if self.frontend_tuner_status[tuner_num].tuner_types.count(value.tuner_type) <= 0:
-                print 'DEBUG_TEST 1.0.0'
+                self._log.debug(' Allocation Failed, No tuner of the correct type available')
                 continue 
             if len(value.rf_flow_id) != 0 and  value.rf_flow_id != self.frontend_tuner_status[tuner_num].rf_flow_id:
-                print 'DEBUG_TEST 1.0.1'
+                self._log.debug(' Allocation Failed, rf_flow_ID does not match')
                 continue
             if value.group_id != self.frontend_group_id:
-                print 'DEBUG_TEST 1.0.2'
+                self._log.debug(' Allocation Failed, group ID does not match')
                 continue
             
             # Non-internal allocations can not use internal allocated parents
             if not internal_allocation_request and ( self.frontend_tuner_status[tuner_num].allocated and self.frontend_tuner_status[tuner_num].internal_allocation ) :
-                print 'DEBUG_TEST 1.0.3'
+                self._log.debug(' Allocation Failed, Non-internal allocations can not use internal allocated parents')
                 continue
             
             ########## LISTENER ALLOCATION - IE - DEVICE CONTROL IS FALSE ##########
             if not value.device_control:
                 if not self.frontend_tuner_status[tuner_num].allocated:
-                    print 'DEBUG_TEST 1.0.4'
+                    self._log.debug(' Listener Allocation failed because tuner was not already allocated')
                     continue
                 
                 reg_sr = value.sample_rate
@@ -1211,7 +1215,7 @@ class MSDD_i(MSDD_base):
                                          self.frontend_tuner_status[tuner_num].center_frequency, self.frontend_tuner_status[tuner_num].bandwidth, self.frontend_tuner_status[tuner_num].sample_rate)
                              
                 if not valid:
-                    print 'DEBUG_TEST 1.0.5'
+                    self._log.debug(" Listener Allocation failed, parameters don't match")
                     continue
                 
                 # Make a Listener allocation for this tuner with the requested allocation ID
@@ -1223,28 +1227,30 @@ class MSDD_i(MSDD_base):
                 except:
                     self._log.exception("Could not allocation Listener")
                     return False
-                if retval:
-                    self.frontend_tuner_status[tuner_num].internal_allocation_children.append(from_child_tuner_num)
-                    self.frontend_tuner_status[from_child_tuner_num].internal_allocation_parent = tuner_num
-                    try:
-                        self.MSDD.add_child_tuner(self.frontend_tuner_status[tuner_num].rx_object,self.frontend_tuner_status[from_child_tuner_num].rx_object)
-                    except:
-                        self._log.exception("Error on add_child")
-                        return False
-                    try:
-                        self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.updateRfFrequencyOffset(self.frontend_tuner_status[tuner_num].center_frequency)
-                    except:
-                        self._log.exception("Error on updateRfFreq" + str(self.frontend_tuner_status[tuner_num].center_frequency))
-                        return False                    
+                if retval: 
+                    if internal_allocation_request:
+                        # If this listener is allocated for a child tuner make the necessary links and updates. 
+                        self.frontend_tuner_status[tuner_num].internal_allocation_children.append(from_child_tuner_num)
+                        self.frontend_tuner_status[from_child_tuner_num].internal_allocation_parent = tuner_num
+                        try:
+                            self.MSDD.add_child_tuner(self.frontend_tuner_status[tuner_num].rx_object,self.frontend_tuner_status[from_child_tuner_num].rx_object)
+                        except:
+                            self._log.exception("Error on add_child")
+                            return False
+                        try:
+                            self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.updateRfFrequencyOffset(self.frontend_tuner_status[tuner_num].center_frequency)
+                        except:
+                            self._log.exception("Error on updateRfFreq" + str(self.frontend_tuner_status[tuner_num].center_frequency))
+                            return False                    
                     return True
                 else:
-                    print 'DEBUG_TEST 1.0.5b'
+                    self._log.debug(" Allocating Listener Failed")
                     return False
                 
                 
             ########## CONTROLLER ALLOCATION - IE - DEVICE CONTROL IS TRUE ##########
             if self.frontend_tuner_status[tuner_num].allocated:
-                print 'DEBUG_TEST 1.0.6'
+                self._log.debug(" Control Allocating failed because given tuner was already allocated")
                 continue
             
 
@@ -1253,19 +1259,8 @@ class MSDD_i(MSDD_base):
             parent_tuner = self.MSDD.get_parent_tuner_num(self.frontend_tuner_status[tuner_num].rx_object)
             if parent_tuner != None and value.tuner_type != self.FE_TYPE_SPC:
                 if not self.frontend_tuner_status[parent_tuner].allocated:
-                    print 'DEBUG_TEST 1.0.7'
+                    self._log.debug(" Control Allocating failed because given tuner's parent was not already allocated")
                     continue
-                #if self.frontend_tuner_status[parent_tuner].tuner_type != self.FE_TYPE_DDC:
-                #    continue
-
-                
-#                 reject_allocation = True
-#                 for tn in self.dig_tuner_base_nums:
-#                     reject_allocation = reject_allocation and (self.frontend_tuner_status[tn].allocated and self.frontend_tuner_status[tn].tuner_type == self.FE_TYPE_RXDIG)
-#             if reject_allocation:
-#                 return False
-#                 if self.pending_spc_registrations.count(self.frontend_tuner_status[tuner_num].allocation_id_control) > 0:
-#                     self.register_spc_connection(self.frontend_tuner_status[tuner_num].allocation_id_control)           
 
             try:    
                 valid_cf = None
@@ -1273,10 +1268,6 @@ class MSDD_i(MSDD_base):
                 valid_bw = None
                 success = True
                 
-#                outputEnabled = False
-#                if self.frontend_tuner_status[tuner_num].rx_object.has_streaming_output():
-#                    outputEnabled = self.frontend_tuner_status[tuner_num].rx_object.output_object.object.getEnable()
-#                    self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setEnable(False)
                 if self.frontend_tuner_status[tuner_num].rx_object.is_digital_only(): #Only set center frequency if it does NOT have a corresponding analog receiver
                     try:
                         valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(value.center_frequency)
@@ -1314,7 +1305,7 @@ class MSDD_i(MSDD_base):
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
                     else:
-                        print "We Shouldn't get here"
+                        self._log.error("Allocation Failed, unknown reason, Shouldn't get here")
                         success = False
                 
                 if self.frontend_tuner_status[tuner_num].rx_object.is_analog():
@@ -1339,11 +1330,7 @@ class MSDD_i(MSDD_base):
                     self.msdd_spc_configuration.stop_frequency = maxFreq
                     valid_bw = value.bandwidth > 0
                     success &= self.frontend_tuner_status[tuner_num].rx_object.spectral_scan_object.object.setFrequencies(minFreq, maxFreq)
-                    
                 self.set_default_msdd_gain_value_for_tuner(tuner_num)
-                
-#                if self.frontend_tuner_status[tuner_num].rx_object.has_streaming_output():
-#                    self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setEnable(outputEnabled)
                 
                 if valid_cf == None or valid_bw == None or valid_sr == None or not success:
                     self._log.debug("EITHER CENTER FREQUENCY, BANDWIDTH, OR SAMPLE RATE IS INVALID")
@@ -1371,9 +1358,11 @@ class MSDD_i(MSDD_base):
                 self.matchAllocationIdToStreamId(value.allocation_id, value.allocation_id,"dataVITA49_out_PSD")
                 self.tuner_allocation_ids[tuner_num].control_allocation_id = value.allocation_id
                 self.allocation_id_to_tuner_id[value.allocation_id] =  tuner_num
+                
                 if value.tuner_type != self.FE_TYPE_SPC:
                     self.sendAttach(self.frontend_tuner_status[tuner_num].allocation_id_control, tuner_num)
-                self._log.debug("--- SUCCESSFUL ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
+
+                self._log.info("--- SUCCESSFUL ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
                 
                 if self.pending_fft_registrations.count(self.frontend_tuner_status[tuner_num].allocation_id_control) > 0:
                     self.register_fft_connection(self.frontend_tuner_status[tuner_num].allocation_id_control)
@@ -1382,16 +1371,15 @@ class MSDD_i(MSDD_base):
                     parent_tuner = self.MSDD.get_parent_tuner_num(self.frontend_tuner_status[tuner_num].rx_object)
                     self.register_spc_connection(self.frontend_tuner_status[tuner_num].allocation_id_control, parent_tuner)
                    
-                print "Returning True"
                 return True
                 
             except:
                     self._log.info("--- FAILED ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
                     continue
-        #If got here, than all allocations failed. We can check to see if we can remap a software ddc to a hardware ddc. Currenty we 
+        #If got here, than all allocations failed. We can check to see if we can remap a software ddc to a hardware ddc. Currently we 
         # do NOT allow chaining of multiple software ddc's together
         allow_remap_check = len(available_sw_tuners) > 0 and len(available_hw_tuners) > 0 and self.advanced.allow_internal_allocations
-        if allow_remap_check and not(internal_allocation_request):
+        if allow_remap_check and not(internal_allocation_request) and value.tuner_type=='DDC':
             self._log.debug("Looking to do make an internal allocation") 
             sw_tuner_num = available_sw_tuners[0]
             parent_allocation = copy.deepcopy(value)
@@ -1405,15 +1393,16 @@ class MSDD_i(MSDD_base):
             parent_allocation.device_control = False
             parent_allocated = False
             try:
-                self._log.debug("--- ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS LISTENER (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
+                self._log.trace("--- ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS LISTENER (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
                 parent_allocated = self.allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
                 if not parent_allocated:
                     parent_allocation.device_control = True
-                    self._log.debug("--- 2ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS CONTROL (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
+                    self._log.trace("--- 2ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS CONTROL (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
                     parent_allocated = self.allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
                 if not parent_allocated:
                     raise Exception("PARENT COULD NOT BE ALLOCATED")
-                self._log.debug("--- ATTEMPTING SW TUNER SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
+                self._log.trace("--- ATTEMPTING SW TUNER SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
+
                 tuner_allocated = self.allocate_frontend_tuner_allocation(value,None,sw_tuner_num)
                 if not tuner_allocated:
                     raise Exception("SW TUNER COULD NOT BE ALLOCATED")
@@ -1436,7 +1425,7 @@ class MSDD_i(MSDD_base):
         modify fts, which corresponds to self.frontend_tuner_status[tuner_id]
         Make sure to set the 'enabled' member of fts to indicate that tuner as enabled
         ************************************************************'''
-        
+        self._log.debug("deviceEnable tuner_id " +str(tuner_id))
         try:
             if self.frontend_tuner_status[tuner_id].rx_object.is_digital():
                 self.frontend_tuner_status[tuner_id].rx_object.digital_rx_object.object.setEnable(True)
@@ -1456,195 +1445,9 @@ class MSDD_i(MSDD_base):
                 self.frontend_tuner_status[tuner_id].rx_object.digital_rx_object.object.setEnable(False)
         except:
             self._log.exception("Exception on Tuner Enable")
+
         self.update_tuner_status([tuner_id])
 
-#     def deviceSetTuning(self,request, fts, tuner_num,from_child_tuner_num = None, retry_tuner_num = None):
-# 
-#         internal_allocation_request = (from_child_tuner_num != None)
-# 
-#         # These are used later in the allocation. If the allocation fails, then we may be able to remap the child tuner (ie -software ddc) 
-#         #   in the MSDD with another parent.  
-#         available_sw_tuners = []
-#         available_hw_tuners = []       
-# 
-#         self._log.debug("!!!! ALLOCATION REQUEST (INTERNAL=" + str(internal_allocation_request) + ") WITH CONFIG: " + str(request))        
-# 
-#         if request.tuner_type == self.FE_TYPE_DDC:
-#             reject_allocation = True
-#             for tn in self.dig_tuner_base_nums:
-#                 reject_allocation = reject_allocation and (self.frontend_tuner_status[tn].allocated and self.frontend_tuner_status[tn].tuner_type == self.FE_TYPE_RXDIG)
-#             if reject_allocation:
-#                 return False        
-# 
-#         # Used to map out available hardware and software tuners
-#         if self.frontend_tuner_status[tuner_num].rx_object.is_hardware_based():
-#             available_hw_tuners.append(tuner_num)
-#         else:
-#             available_sw_tuners.append(tuner_num)
-#         
-#         ### MAKE SURE PARENT IS ALLCOATED
-#         parent_tuner = self.MSDD.get_parent_tuner_num(self.frontend_tuner_status[tuner_num].rx_object)
-#         if parent_tuner != None and request.tuner_type != self.FE_TYPE_SPC:
-#             self._log.debug("PARENT: " + str(parent_tuner) + ", ALLOCATED: " + str(self.frontend_tuner_status[parent_tuner].allocated) + ", TYPE: " + str(self.frontend_tuner_status[parent_tuner].tuner_type))
-#             if not self.frontend_tuner_status[parent_tuner].allocated:
-#                 print 'DEBUG_TEST 1.0.7'
-#                 return False
-#         try:    
-#             valid_cf = None
-#             valid_sr = None
-#             valid_bw = None
-#             success = True
-#             
-# #            outputEnabled = False
-# #            if self.frontend_tuner_status[tuner_num].rx_object.has_streaming_output():
-# #                outputEnabled = self.frontend_tuner_status[tuner_num].rx_object.output_object.object.getEnable()
-# #                self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setEnable(False)
-# 
-#             if self.frontend_tuner_status[tuner_num].rx_object.is_digital_only(): #Only set center frequency if it does NOT have a corresponding analog receiver
-#                 valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(request.center_frequency)
-#                 success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setFrequency_Hz(valid_cf)
-#                     
-#             if self.frontend_tuner_status[tuner_num].rx_object.is_digital():
-#                 if request.sample_rate!=0 and request.bandwidth!=0: #Specify a SR and BW
-#                     sr = max(request.bandwidth,request.sample_rate) #Ask for enough sr to satisfy the bw request
-#                     valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(sr, request.sample_rate_tolerance)
-#                     valid_bw = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_bandwidth(request.bandwidth, request.bandwidth_tolerance)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
-#                    
-#                 elif request.sample_rate!=0 and request.bandwidth==0: #Specify only SR
-#                     valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(request.sample_rate, request.sample_rate_tolerance)
-#                     valid_bw = valid_sr
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
-#                    
-#                 elif request.sample_rate==0 and request.bandwidth!=0: #specify only BW so use it for requested SR
-#                     valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(request.bandwidth, request.bandwidth_tolerance)
-#                     valid_bw = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_bandwidth(request.bandwidth, request.bandwidth_tolerance)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_sr)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
-#                 elif request.sample_rate==0 and request.bandwidth==0: #Don't care for both sample_rate and bandwidth so find any valid request and use it
-#                     valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(1, 1e15)
-#                     valid_bw = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_bandwidth(1, 1e15)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
-#                     success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
-#                 else:
-#                     print "We Shouldn't get here"
-#                     success = False
-#         
-#             if self.frontend_tuner_status[tuner_num].rx_object.is_analog():
-#                 valid_sr = 0.0
-#                 valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(request.center_frequency)
-#                 if request.bandwidth != 0:
-#                     valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(request.bandwidth, request.bandwidth_tolerance)
-#                 else: 
-#                     valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(1, 1e15)
-#                 success &= self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setFrequency_Hz(valid_cf)
-#                 success &= self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setBandwidth_Hz(valid_bw)
-#             
-#             if self.frontend_tuner_status[tuner_num].rx_object.is_spectral_scan() and request.tuner_type == self.FE_TYPE_SPC:
-#                 #Because it uses the RCV module, use it as part of the validation
-#                 valid_sr = 0.0
-#                 minFreq = (request.center_frequency - request.bandwidth / 2.0) 
-#                 maxFreq = (request.center_frequency + request.bandwidth / 2.0) 
-#                 valid_cf_min = self.frontend_tuner_status[tuner_num].rx_object.rx_parent_object.analog_rx_object.object.get_valid_frequency(minFreq)
-#                 valid_cf_max = self.frontend_tuner_status[tuner_num].rx_object.rx_parent_object.analog_rx_object.object.get_valid_frequency(maxFreq)
-#                 valid_cf = valid_cf_min and valid_cf_max and maxFreq > minFreq
-#                 self.msdd_spc_configuration.start_frequency = minFreq
-#                 self.msdd_spc_configuration.stop_frequency = maxFreq
-#                 valid_bw = request.bandwidth > 0
-#                 success &= self.frontend_tuner_status[tuner_num].rx_object.spectral_scan_object.object.setFrequencies(minFreq, maxFreq)
-#                 
-#             self.set_default_msdd_gain_value_for_tuner(tuner_num)
-#             
-# #                if self.frontend_tuner_status[tuner_num].rx_object.has_streaming_output():
-# #                    self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setEnable(outputEnabled)
-#             
-#             if valid_cf == None or valid_bw == None or valid_sr == None or not success:
-#                 self._log.debug("EITHER CENTER FREQUENCY, BANDWIDTH, OR SAMPLE RATE IS INVALID")
-#                 raise Exception("EITHER CENTER FREQUENCY, BANDWIDTH, OR SAMPLE RATE IS INVALID")
-#     
-#             if internal_allocation_request:
-#                 self.frontend_tuner_status[tuner_num].internal_allocation = True
-#                 self.frontend_tuner_status[tuner_num].internal_allocation_children.append(from_child_tuner_num)
-#                 self.frontend_tuner_status[from_child_tuner_num].internal_allocation_parent = tuner_num
-#                 self.MSDD.add_child_tuner(self.frontend_tuner_status[tuner_num].rx_object,self.frontend_tuner_status[from_child_tuner_num].rx_object)
-# 
-#             for children in self.frontend_tuner_status[tuner_num].rx_object.rx_child_objects:
-#                 if children.digital_rx_object != None:
-#                     children.digital_rx_object.object.updateRfFrequencyOffset(valid_cf)
-#                     
-#             self.frontend_tuner_status[tuner_num].tuner_type = request.tuner_type
-#             self.frontend_tuner_status[tuner_num].allocated = True
-#             self.frontend_tuner_status[tuner_num].allocation_id_control = request.allocation_id;
-#             self.frontend_tuner_status[tuner_num].allocation_id_csv = self.create_allocation_id_csv(self.frontend_tuner_status[tuner_num].allocation_id_control, self.frontend_tuner_status[tuner_num].allocation_id_listeners)
-#             self.update_tuner_status([tuner_num])
-#             self.matchAllocationIdToStreamId(request.allocation_id, request.allocation_id,"dataSDDS_out")
-#             self.matchAllocationIdToStreamId(request.allocation_id, request.allocation_id,"dataSDDS_out_PSD")
-#             self.matchAllocationIdToStreamId(request.allocation_id, request.allocation_id,"dataSDDS_out_SPC")
-#             self.matchAllocationIdToStreamId(request.allocation_id, request.allocation_id,"dataVITA49_out")
-#             self.matchAllocationIdToStreamId(request.allocation_id, request.allocation_id,"dataVITA49_out_PSD")
-#             if request.tuner_type != self.FE_TYPE_SPC:
-#                 self.sendAttach(self.frontend_tuner_status[tuner_num].allocation_id_control, tuner_num)
-#             self._log.debug("--- SUCCESSFUL ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(request))
-#             
-#             if self.pending_fft_registrations.count(self.frontend_tuner_status[tuner_num].allocation_id_control) > 0:
-#                 self.register_fft_connection(self.frontend_tuner_status[tuner_num].allocation_id_control)
-#                 
-#             if request.tuner_type == self.FE_TYPE_SPC:
-#                 parent_tuner = self.MSDD.get_parent_tuner_num(self.frontend_tuner_status[tuner_num].rx_object)
-#                 self.register_spc_connection(self.frontend_tuner_status[tuner_num].allocation_id_control, parent_tuner)
-#                
-#             
-#             return True
-#             
-#         except:
-#                 self._log.exception("--- FAILED ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(request))
-#                 return False
-#         
-#         
-#         #TODO: Need to look at this part below, this isn't going to work the same with the architecture
-#                
-# #         #If got here, than all allocations failed. We can check to see if we can remap a software ddc to a hardware ddc. Currenty we 
-# #         # do NOT allow chaining of multiple software ddc's together
-# #         allow_remap_check = len(available_sw_tuners) > 0 and len(available_hw_tuners) > 0 and self.advanced.allow_internal_allocations
-# #         if allow_remap_check:
-# #             sw_tuner_num = available_sw_tuners[0]
-# #             parent_allocation = copy.deepcopy(request)
-# #             parent_allocation.tuner_type = self.FE_TYPE_DDC
-# #             parent_allocation.allocation_id = "internal_alloc_" + str(uuid.uuid4())  
-# #             dec_list = self.frontend_tuner_status[sw_tuner_num].rx_object.digital_rx_object.object.getDecimationList()
-# #             parent_allocation.sample_rate *= dec_list[0]
-# #             parent_allocation.sample_rate_tolerance = ((request.sample_rate *(1+request.sample_rate_tolerance/100)*dec_list[-1])/parent_allocation.sample_rate -1)*100
-# #             parent_allocation.bandwidth *= dec_list[0]
-# #             parent_allocation.bandwidth_tolerance = ((request.bandwidth *(1+request.bandwidth_tolerance/100)*dec_list[-1])/parent_allocation.bandwidth -1)*100
-# #             parent_allocation.device_control = False
-# #             parent_allocated = False
-# #             try:
-# # #                print "--- ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation)
-# #                 parent_allocated = self.deviceSetTuning(parent_allocation,sw_tuner_num,None)
-# #                 if not parent_allocated:
-# #                     parent_allocation.device_control = True
-# # #                    print "--- 2ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation)
-# #                     parent_allocated = self.allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
-# #                 if not parent_allocated:
-# #                     raise Exception("PARENT COULD NOT BE ALLOCATED")
-# # #                print "--- ATTEMPTING SW TUNER SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation)
-# #                 tuner_allocated = self.allocate_frontend_tuner_allocation(request,None,sw_tuner_num)
-# #                 if not tuner_allocated:
-# #                     raise Exception("SW TUNER COULD NOT BE ALLOCATED")
-# #                 return True
-# #             except:
-# #                 if parent_allocated:
-# #                     self.deallocate_frontend_tuner_allocation(parent_allocation)
-# #                 return False
-# #                 
-# #         return True
-# 
     def deviceDeleteTuning(self,fts,tuner_id):
         parent_tuner = self.frontend_tuner_status[tuner_id].internal_allocation_parent
         if parent_tuner != None:
@@ -1656,38 +1459,8 @@ class MSDD_i(MSDD_base):
         self.frontend_tuner_status[tuner_id].internal_allocation_parent = None
         self.frontend_tuner_status[tuner_id].internal_allocation_children = []
         self.frontend_tuner_status[tuner_id].internal_allocation = False
+        self.frontend_tuner_status[tuner_id].allocated = False
           
-          
-#     def deviceDeleteTuning(self, fts, tuner_id):
-#         '''
-#         ************************************************************
-#         modify fts, which corresponds to self.frontend_tuner_status[tuner_id]
-#         return True if the tune deletion succeeded, and False if it failed
-#         ************************************************************'''
-#         self._log.debug( "Received a tuner deallocation for tuner_id,"+str(tuner_id))
-#                
-#         if self.frontend_tuner_status[tuner_id].rx_object.is_digital():
-#             self.frontend_tuner_status[tuner_id].rx_object.digital_rx_object.object.setEnable(False) 
-#         if self.frontend_tuner_status[tuner_id].rx_object.is_spectral_scan():
-#             self.frontend_tuner_status[tuner_id].rx_object.spectral_scan_object.object.setEnable(False)
-#         self.frontend_tuner_status[tuner_id].allocated = False
-#         self.frontend_tuner_status[tuner_id].allocation_id_control = "";
-#         self.frontend_tuner_status[tuner_id].allocation_id_listeners = []
-#         self.frontend_tuner_status[tuner_id].allocation_id_csv = self.create_allocation_id_csv(self.frontend_tuner_status[tuner_id].allocation_id_control, self.frontend_tuner_status[tuner_id].allocation_id_listeners)
-#         self.update_tuner_status([tuner_id])
-#         self.sendDetach(fts.allocation_id_csv.split(',')[0])
-#         #parent_tuner = self.frontend_tuner_status[tuner_id].internal_allocation_parent
-# #                 if parent_tuner != None:
-# #                     self.frontend_tuner_status[parent_tuner].internal_allocation_children.remove(tuner_id)
-# #                     if(len(self.frontend_tuner_status[parent_tuner].internal_allocation_children) <= 0):
-# #                         parent_allocation = copy.deepcopy(value)
-# #                         parent_allocation.allocation_id = self.frontend_tuner_status[parent_tuner].allocation_id_control
-# #                         self.deallocate_frontend_tuner_allocation(parent_allocation)
-#         self.frontend_tuner_status[tuner_id].internal_allocation_parent = None
-#         self.frontend_tuner_status[tuner_id].internal_allocation_children = []
-#         self.frontend_tuner_status[tuner_id].internal_allocation = False
-#             
-#         return
 
     '''
     *************************************************************

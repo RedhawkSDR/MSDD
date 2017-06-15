@@ -18,8 +18,6 @@ The unit test test needs to be configured with the IP address settings for the M
 Our testing was completed with the following hardware and software
 
 Model: MSDD-6000
-FPGA: 
-firmware: 
  
 
 ## Results
@@ -28,11 +26,12 @@ firmware:
 
 ```
 Report Statistics:
+   Checks that returned "FAIL" .................. 2
    Checks that returned "WARN" .................. 34
    Checks that returned "no" .................... 5
-   Checks that returned "ok" .................... 205
+   Checks that returned "ok" .................... 266
    Checks with silent results ................... 38
-   Total checks made ............................ 282
+   Total checks made ............................ 345
 
 ```
 
@@ -45,6 +44,11 @@ Report Statistics:
 '''
 
 ### `error` Details
-None
+dataSDDS_out_SPC: No SRI pushed after connection and Allocation. Cannot
+     continue Test..........................................................FAIL
+dataSDDS_out_PSD: No SRI pushed after connection and Allocation. Cannot
+     continue Test..........................................................FAIL
+
+These two output ports (dataSDDS_out_SPC and dataSDDS_out_PSD) are not the standard data output ports and are custom to the MSDD. The standard data flow tests do not work with. 
 
 

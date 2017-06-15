@@ -39,6 +39,11 @@ from redhawk.frontendInterfaces import FRONTEND, FRONTEND__POA, TunerControl_idl
 from bulkio.bulkioInterfaces import BULKIO, BULKIO__POA
 from ossie.utils.bulkio import bulkio_data_helpers
 
+MCAST_GROUP = "234.168.103.100"
+MCAST_PORT = None
+MCAST_VLAN = None
+MCAST_IFACE = None
+
 DEBUG_LEVEL = 0
 def set_debug_level(lvl=0):
     global DEBUG_LEVEL
@@ -2748,6 +2753,38 @@ class FrontendTunerTests(unittest.TestCase):
                     error = True
             self.check(error, False, 'Deallocated multiple DDC without error') 
             
+            # Deallocate the RX_DIGITIZER_CHANNELIZER
+            error = False
+            try:
+                self.dut_ref.deallocateCapacity(t1Alloc)
+            except Exception, e:
+                print e
+                error = True
+                self.check(error, False, 'Deallocated RX_DIGITIZER_CHANNELIZER without error')            
+            
+        else:
+            #No RX_DIGITIZER_CHANNELIZER Capability
+            pass
+
+
+
+    def testFRONTEND_2_5_3(self):
+        ''' RX_DIG 2.5 Test Output of DDC
+        '''
+        if "RX_DIGITIZER_CHANNELIZER" in DEVICE_INFO['capabilities'][0]:
+
+            t1 = generateRXDigitizerChannelizerRequest(idx=0)
+            t1Alloc = generateTunerAlloc(t1)
+            if not self.dut_ref.allocateCapacity(t1Alloc):
+                self.check(True, False, 'Cannot allocate single RX_DIGITIZER_CHANNELIZER')
+
+            time.sleep(2)
+            
+            t2 = generateDDCRequest(idx=0,cf=t1['CF'])
+            tuner_control = self.dut.getPort('DigitalTuner_in')
+            
+            self._testSDDS(tuner_control,"dataSDDS_out","dataSDDS","DDC",t2,None,None)
+           
             # Deallocate the RX_DIGITIZER_CHANNELIZER
             error = False
             try:
