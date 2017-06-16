@@ -1,6 +1,5 @@
 variables:
   namespace: rh.
-  rh_20_release: '2.0.6'
   rh_21_release: '2.1.1'
 
 .package: &package
@@ -36,33 +35,6 @@ variables:
     paths:
       - output/*/*.rpm
     expire_in: 2 days
-
-package:el6:rh2.0:
-  variables:
-    latest_version: 2.0-nightly
-    release_version: $rh_20_release
-    short_version: '2.0'
-    dist: el6
-    arch: x86_64
-  <<: *package
-
-package:el6-i386:rh2.0:
-  variables:
-    latest_version: 2.0-nightly
-    release_version: $rh_20_release
-    short_version: '2.0'
-    dist: el6
-    arch: i686
-  <<: *package
-
-package:el7:rh2.0:
-  variables:
-    latest_version: 2.0-nightly
-    release_version: $rh_20_release
-    short_version: '2.0'
-    dist: el7
-    arch: x86_64
-  <<: *package
 
 package:el6:rh2.1:
   variables:

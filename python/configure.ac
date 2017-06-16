@@ -9,14 +9,14 @@ OSSIE_CHECK_OSSIE
 OSSIE_SDRROOT_AS_PREFIX
 AM_PATH_PYTHON([2.4])
 
-PKG_CHECK_MODULES([OSSIE], [ossie >= 2.0])
+PKG_CHECK_MODULES([OSSIE], [ossie >= 2.1.1])
 AC_CHECK_PYMODULE(ossie, [], [AC_MSG_ERROR([the python ossie module is required])])
 PKG_CHECK_MODULES([OMNIORB], [omniORB4 >= 4.1.0])
 AC_CHECK_PYMODULE(omniORB, [], [AC_MSG_ERROR([the python omniORB module is required])])
 
-PKG_CHECK_MODULES(frontend, frontend >= 2.2) 
+PKG_CHECK_MODULES(frontend, frontend >= 2.4)
 AC_CHECK_PYMODULE(frontend, [], [AC_MSG_ERROR([the python frontend module is required])])
-PKG_CHECK_MODULES(bulkio, bulkio >= 2.0) 
+PKG_CHECK_MODULES(bulkio, bulkio >= 2.1)
 AC_CHECK_PYMODULE(bulkio, [], [AC_MSG_ERROR([the python bulkio module is required])])
 
 AC_CONFIG_FILES(Makefile)
