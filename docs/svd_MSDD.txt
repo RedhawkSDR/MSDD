@@ -1,0 +1,78 @@
+SOFTWARE VERSION DESCRIPTION DOCUMENT
+
+Asset Name:	MSDD
+Version:	2.0.0
+Date:		10/15/2013
+
+
+1  Scope
+
+1.1  Identification
+This software version description document provides release information for the software asset and version listed above.
+
+1.2  System overview
+The MSDD controls the MSDD3000 and MSDD6000 series receviers with their stock/base load. 
+  
+1.3  Document overview
+This software version description document is organized into the following sections:
+* 1 − Scope
+* 2 − References
+* 3 − Version Descriptions
+* 4 − Notes
+
+2  Referenced documents
+The following documentation is referenced by this document:
+* N/A
+
+3  Version description
+
+3.1  Inventory of materials released
+Packaged release include binary and source artifacts for the associated asset.
+
+3.2  Inventory of software contents
+Binary and source artifacts for the software asset
+
+3.3  Changes installed 
+[v2.0.0] - Initial Version. 
+
+
+
+3.4  Adaptation data
+3.4.1 Dependencies: 
+	* REDHAWK = 1.8.X
+	* frontendInterfaces >= 2.0.0
+3.4.2 Additional Dependencies: 
+	* NONE
+3.4.3 Optional Dependencies:
+	* NONE
+3.4.4 Soft Package Dependencies:
+	* NONE
+
+3.5  Related documents
+There are no related documents needed for the installation and test of this release.
+
+3.6  Installation instructions
+a. Instructions for installing the software version: 
+* RPM Distribution - "rpm -Uvh MSDD-2.0.0-[os/arch].rpm"
+* Source Distribution "./reconf; ./configure; make install"
+b. Identification of other changes that have to be installed for this version to be used, including site-unique adaptation data not included in the software version
+None
+c. Security, privacy, or safety precautions relevant to the installation
+None
+d. Procedures for determining whether the version has been installed properly
+Assets install by default in the SDRROOT location as defined in REDHAWK; $SDRROOT/dev/devices/MSDD 
+e. A point of contact
+REDHAWK team
+
+3.7 Possible problems and known errors
+* None
+
+4  Notes
+Glossary:
+REDHAWK - REDHAWK is a software-defined radio (SDR) framework designed to support the development, deployment, and management of real-time software radio applications
+SCA - Software Communications Architecture
+SDR - Software Defined Radio
+IPP - Intel Performance Primitives Libraries, and Accompanying REDHAWK Packaging
+FFTW - Fast Fourier Transform Libraries
+
+
