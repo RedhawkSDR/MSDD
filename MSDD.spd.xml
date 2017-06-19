@@ -13,7 +13,7 @@
     <localfile name="MSDD.scd.xml"/>
   </descriptor>
   <implementation id="python">
-    <description>The implementation contains descriptive information about the template for a software resource.</description>
+    <description>This device is a FRONTEND Interfaces compliant device for the Midwest Microwave MSDD-3000/6000 receiver.</description>
     <code type="Executable">
       <localfile name="python"/>
       <entrypoint>python/MSDD.py</entrypoint>

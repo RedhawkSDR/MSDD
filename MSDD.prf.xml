@@ -296,7 +296,7 @@ Bit 7: RF Gain
     <configurationkind kindtype="property"/>
   </structsequence>
   <struct id="msdd_psd_configuration" mode="readwrite">
-    <description>Currently this is global across all fft modules.This may be changed in future releases.</description>
+    <description>This is global across all fft modules.</description>
     <simple id="msdd_psd_configuration::fft_size" name="fft_size" type="double">
       <description>fft_size</description>
       <value>32768</value>
@@ -397,7 +397,7 @@ and comprise it unless you looking for the strongest signal.</description>
     <configurationkind kindtype="property"/>
   </struct>
   <structsequence id="FRONTEND::tuner_status" mode="readonly" name="frontend_tuner_status">
-    <description>Status of each tuner, including entries for both allocated and un-allocated tuners. Each entry represents a single tuner.</description>
+    <description>Status of each tuner, including entries for both allocated and un-allocated tuners. </description>
     <struct id="FRONTEND::tuner_status_struct" name="frontend_tuner_status_struct">
       <simple id="FRONTEND::tuner_status::allocation_id_csv" name="allocation_id_csv" type="string">
         <description>Comma separated list of current Allocation IDs.</description>

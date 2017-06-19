@@ -18,18 +18,29 @@
     <supportsinterface repid="IDL:CF/LogConfiguration:1.0" supportsname="LogConfiguration"/>
     <ports>
       <provides repid="IDL:FRONTEND/RFInfo:1.0" providesname="RFInfo_in">
+        <description>RFInfo In port for antenna data. </description>
         <porttype type="data"/>
       </provides>
       <provides repid="IDL:FRONTEND/DigitalTuner:1.0" providesname="DigitalTuner_in">
+        <description>Digital Tuner Control Port</description>
         <porttype type="control"/>
       </provides>
       <uses repid="IDL:BULKIO/dataSDDS:1.0" usesname="dataSDDS_out">
+        <description>Pre-d output data from tuners via SDDS. Output format is controlled via msdd_output_configuration property. </description>
         <porttype type="data"/>
       </uses>
-      <uses repid="IDL:BULKIO/dataVITA49:1.0" usesname="dataVITA49_out"/>
-      <uses repid="IDL:BULKIO/dataSDDS:1.0" usesname="dataSDDS_out_PSD"/>
-      <uses repid="IDL:BULKIO/dataSDDS:1.0" usesname="dataSDDS_out_SPC"/>
-      <uses repid="IDL:BULKIO/dataVITA49:1.0" usesname="dataVITA49_out_PSD"/>
+      <uses repid="IDL:BULKIO/dataVITA49:1.0" usesname="dataVITA49_out">
+        <description>Pre-d output data from tuners via VITA-49. Output format is controlled via msdd_output_configuration property. </description>
+      </uses>
+      <uses repid="IDL:BULKIO/dataSDDS:1.0" usesname="dataSDDS_out_PSD">
+        <description>PSD output data from tuners via SDDS. Output format is controlled via msdd_output_configuration property. </description>
+      </uses>
+      <uses repid="IDL:BULKIO/dataSDDS:1.0" usesname="dataSDDS_out_SPC">
+        <description>Spectral scanning output data via SDDS. </description>
+      </uses>
+      <uses repid="IDL:BULKIO/dataVITA49:1.0" usesname="dataVITA49_out_PSD">
+        <description>PSD output data from tuners via VITA49. Output format is controlled via msdd_output_configuration property. </description>
+      </uses>
     </ports>
   </componentfeatures>
   <interfaces>
