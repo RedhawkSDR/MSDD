@@ -13,10 +13,8 @@ variables:
     # Use RPM release from specfile if this is a tag
     - safe_version=$(echo ${short_version} | tr -d -)
     - if [ -z "$CI_COMMIT_TAG" ]; then
-        redhawk_version=${latest_version}
         rpm_release="0.$CI_PIPELINE_ID.rh${safe_version}";
       else
-        redhawk_version=${release_version}
         rpm_release="`rpm --query --queryformat "%{release}\n" --specfile ${namespace}$CI_PROJECT_NAME.spec | awk -F"." "{print $1}"`.rh${safe_version}";
       fi
     - other_repos=$yum_repo_url/redhawk-core-framework/$redhawk_version/$dist/$arch
@@ -38,8 +36,7 @@ variables:
 
 package:el6:rh2.1:
   variables:
-    latest_version: 2.1-nightly
-    release_version: $rh_21_release
+    redhawk_version: $rh_21_release
     short_version: '2.1'
     dist: el6
     arch: x86_64
@@ -47,8 +44,7 @@ package:el6:rh2.1:
 
 package:el6-i386:rh2.1:
   variables:
-    latest_version: 2.1-nightly
-    release_version: $rh_21_release
+    redhawk_version: $rh_21_release
     short_version: '2.1'
     dist: el6
     arch: i686
@@ -56,8 +52,7 @@ package:el6-i386:rh2.1:
 
 package:el7:rh2.1:
   variables:
-    latest_version: 2.1-nightly
-    release_version: $rh_21_release
+    redhawk_version: $rh_21_release
     short_version: '2.1'
     dist: el7
     arch: x86_64
