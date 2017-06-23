@@ -322,7 +322,11 @@ class ConsoleModule(baseModule):
     def getIPP(self):
         """Queries the radio for IP and Port """
         resp = self.send_query_command("IPP")
-        return self.parseResponse(resp, 2,':')    
+        try:
+            response = self.parseResponse(resp, 2,':')
+        except:
+            response = self.parseResponse(resp, 3,':')[-2:]
+        return response   
     def getIPPString(self):
         resp = self.send_query_command("IPP")
         return str(self.parseResponse(resp, 1)[0])
@@ -2046,7 +2050,7 @@ class OUTModule(baseModule):
     
     def setIPP_string(self,ipp_str):
         self.send_set_command("IPP ",str(ipp_str))
-        return ipp_str == self.getIPPString()
+        return (ipp_str == self.getIPPString() or ("0:" + ipp_str == self.getIPPString()))
     def setIP(self,ip_address, port):
         ip_arg = str(ip_address).strip() + ":" + str(port).strip()
         return self.setIPP_string(ip_arg)
@@ -2054,7 +2058,12 @@ class OUTModule(baseModule):
     def getIPP(self):
         """ Gets the present IP and UDP port setting for logging module"""
         resp = self.send_query_command("IPP")
-        return self.parseResponse(resp, 2,':')
+        try:
+            response = self.parseResponse(resp, 2,':')
+        except:
+            response = self.parseResponse(resp, 3,':')[-2:]
+        return response
+    
     def getIPPString(self):
         """ Gets the present IP and UDP port setting for logging module"""
         resp = self.send_query_command("IPP")

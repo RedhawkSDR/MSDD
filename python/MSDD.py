@@ -1252,14 +1252,16 @@ class MSDD_i(MSDD_base):
                         self.frontend_tuner_status[tuner_num].internal_allocation_children.append(from_child_tuner_num)
                         self.frontend_tuner_status[from_child_tuner_num].internal_allocation_parent = tuner_num
                         try:
-                            self.MSDD.add_child_tuner(self.frontend_tuner_status[tuner_num].rx_object,self.frontend_tuner_status[from_child_tuner_num].rx_object)
+                            if not self.MSDD.add_child_tuner(self.frontend_tuner_status[tuner_num].rx_object,self.frontend_tuner_status[from_child_tuner_num].rx_object):
+                                self._log.error("Child Add Failed")
+                                raise
                         except:
                             self._log.exception("Error on add_child")
                             return False
                         try:
-                            self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.updateRfFrequencyOffset(self.frontend_tuner_status[tuner_num].center_frequency)
+                            self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.object.updateRfFrequencyOffset(self.frontend_tuner_status[tuner_num].center_frequency)
                         except:
-                            self._log.exception("Error on updateRfFreq" + str(self.frontend_tuner_status[tuner_num].center_frequency))
+                            self._log.exception("Error on updateRfFreq " + str(self.frontend_tuner_status[tuner_num].center_frequency))
                             return False                    
                     return True
                 else:
