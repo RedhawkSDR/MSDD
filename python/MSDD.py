@@ -125,6 +125,7 @@ class MSDD_i(MSDD_base):
     FE_RX_BW=int(8)
     FE_PSD_BW=int(16)
     FE_SPC_BW=int(32)
+    VITA49CONTEXTPACKETINTERVAL = 5.0 # 5 Second Interval for sending VITA49 Context Packets
        
     def getter_with_default(self,_get_,default_value=None):
         try:
@@ -530,6 +531,8 @@ class MSDD_i(MSDD_base):
                 success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setIP(oc_hash[tuner_num].ip_address,str(oc_hash[tuner_num].port))
                 proto = self.frontend_tuner_status[tuner_num].rx_object.output_object.object.getOutputProtocolNumberFromString(oc_hash[tuner_num].protocol)
                 success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setOutputProtocol(proto)
+                success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setCDR(self.VITA49CONTEXTPACKETINTERVAL)
+                success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setCCR(1)
                 success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setTimestampOff(oc_hash[tuner_num].timestamp_offset)
                 success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setEnableVlanTagging(oc_hash[tuner_num].vlan_enabled)
                 success &= self.frontend_tuner_status[tuner_num].rx_object.output_object.object.setOutputEndianess(oc_hash[tuner_num].endianess)

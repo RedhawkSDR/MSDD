@@ -255,6 +255,19 @@ class baseModule(object):
         if items >= 0 and len(retVal_list) != items:
             raise Exception("COULD NOT PARSE OUTPUT \"" + str(resp) + "\"AS DESIRED.")
         return retVal_list
+
+    def parseResponseSpaceOnly(self, resp, items = -1):
+        """Parses a string response from the radio and returns #items elements"""
+        #strip trailing newline, split on spaces 
+        resp = str(resp).strip()
+        resp_split_ws = resp.split()
+        if len(resp_split_ws) < 2:
+            raise Exception("UNKNOWN ERROR HAS BEEN DETECTED: " + str(resp))
+        if resp_split_ws[len(resp_split_ws)-2] == "ERR":
+            raise Exception("ERROR HAS BEEN DETECTED: " + str(resp))      
+        if  len(resp_split_ws) != items:
+            raise Exception("COULD NOT PARSE OUTPUT \"" + str(resp) + "\"AS DESIRED.")
+        return resp_split_ws
     
     def get_value_valid(self,value,tolerance_per, min_val, max_val, step_val=1,closest_ceil=False):
         if step_val <= 0:
@@ -2274,6 +2287,21 @@ class OUTModule(baseModule):
     def setMFP(self, mfp):
         return self.setter_with_validation(int(mfp), self._setMFP, self.getMFP)   
     
+    def getCDR(self):
+        resp = self.send_query_command("CDR")
+        return float(self.parseResponse(resp, 1)[0])
+    def _setCDR(self,cdr):
+        self.send_set_command("CDR",str(cdr))
+    def setCDR(self,cdr):
+        return self.setter_with_validation(float(cdr), self._setCDR, self.getCDR)        
+
+    def getCCR(self):
+        resp = self.send_query_command("CCR")
+        return int(self.parseResponseSpaceOnly(resp, 4)[2]) 
+    def _setCCR(self,ccr):
+        self.send_set_command("CCR",str(ccr))
+    def setCCR(self,ccr):
+        return self.setter_with_validation(int(ccr), self._setCCR, self.getCCR) 
     
     ip_port_string = property(getIPPString)
     ip_addr = property(getIPP_IP)
@@ -2294,6 +2322,8 @@ class OUTModule(baseModule):
     vlan_timestamp_ref = property(getTimestampRef,setTimestampRef, doc="")
     timestamp_offset_ns = property(getTimestampOff,setTimestampOff, doc="")
     mfp = property(getMFP,setMFP, doc="")
+    cdr = property(getCDR,setCDR, doc="")
+    ccr = property(getCCR,setCCR, doc="")
     
 #end class OUTModule
 

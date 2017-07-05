@@ -37,6 +37,7 @@ from ossie.utils import uuid
 
 from redhawk.frontendInterfaces import FRONTEND, FRONTEND__POA, TunerControl_idl
 from bulkio.bulkioInterfaces import BULKIO, BULKIO__POA
+import bulkio
 from ossie.utils.bulkio import bulkio_data_helpers
 
 MCAST_GROUP = "234.168.103.100"
@@ -66,6 +67,34 @@ def set_device_info(dev_info):
     set_impl_id(DEVICE_INFO['impl_id'])
 def get_device_info():
     return DEVICE_INFO
+
+class Vita49SinkHelper():
+    def __init__(self):    
+        self.inVitaPort = bulkio.InVITA49Port("dataVITA49_in")
+        self.inVitaPort.setNewAttachDetachListener(self)
+        self.sock = None
+        self.attachCount = 0
+        self.detachCount = 0
+        self.attaches = {}
+    
+    def attach(self, streamDef, userId):
+        """ VITA49 attach listener for self.inVitaPort.
+        """
+        self.attaches[streamDef.id] = streamDef
+        self.attachCount += 1
+        print "Attaches:", self.attachCount, "  UserId:", userId, "  StreamDef:", streamDef
+
+    def detach(self, id):
+        """ VITA49 detach listener for self.inVitaPort.
+        """
+        self.detachCount += 1
+        print "Detaches:", self.detachCount, "  DetachId:", id
+    
+    def getSRI(self):
+        attachId = self.inVitaPort._get_attachmentIds()[0]
+        recvStreamDef = self.inVitaPort.getStreamDefinition(attachId)
+        return self.inVitaPort.sriDict[recvStreamDef.id][0]
+
 
 class FrontendTunerTests(unittest.TestCase):
     ''' FrontEnd device compatibility tests
@@ -2159,6 +2188,11 @@ class FrontendTunerTests(unittest.TestCase):
         '''
         self._testFRONTEND_3_4_DataFlow(4)
 
+    def testFRONTEND_3_4_DataFlow5(self):
+        ''' RX_DIG 4 DataFlow - Fourth Port
+        '''
+        self._testFRONTEND_3_4_DataFlow(5)
+
     # TODO - noseify
     def _testFRONTEND_3_4_DataFlow(self, port_num):
         ''' RX_DIG 4 DataFlow
@@ -2186,6 +2220,10 @@ class FrontendTunerTests(unittest.TestCase):
                 count += 1
                 if count == port_num:
                     self._testSDDS(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
+            elif comp_port_type == "dataVITA49":
+                count += 1
+                if count == port_num:
+                    self._testvita49(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
             else:
                 print 'WARNING - skipping %s port named %s, not supported BULKIO port type'%(comp_port_type,comp_port_name)
                 continue
@@ -2380,6 +2418,42 @@ class FrontendTunerTests(unittest.TestCase):
         attachments1 = dataSink1._sink.attachments
         self.check(not(attachments1), True,'%s: Detach Data on deallocation'%(comp_port_name))
 
+    def _testvita49(self,tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1=None,listener2=None):
+        vita49Helper = Vita49SinkHelper()
+        comp_port_obj = self.dut.getPort(str(comp_port_name))
+        dataSink1_port_obj = vita49Helper.inVitaPort._this()
+
+        # alloc a tuner
+        controller['ALLOC_ID'] = "control:"+str(uuid.uuid4()) # unique for each loop
+        tAlloc = generateTunerAlloc(controller)
+        comp_port_obj.connectPort(dataSink1_port_obj, controller['ALLOC_ID'])
+        self.dut_ref.allocateCapacity(tAlloc)
+       
+        time.sleep(4)
+        
+    
+        attachments = vita49Helper.inVitaPort._get_attachedStreams()
+        if not attachments:
+            self.check(False, True, "%s: No Attach Sent after connection and Allocation. Cannot continue Test"%(comp_port_name))
+            return
+        
+        sri1 = vita49Helper.getSRI()
+        if not sri1:
+            self.check(False, True, "%s: No SRI pushed after connection and Allocation. Cannot continue Test"%(comp_port_name))
+            return
+        
+
+        try:
+            status = properties.props_to_dict(tuner_control.getTunerStatus(controller['ALLOC_ID']))
+        except FRONTEND.NotSupportedException, e:
+            status = self._getTunerStatusProp(controller['ALLOC_ID'])
+        
+        #verify SRI
+        self._verifySRI (sri1,status,comp_port_name)       
+
+        #verify Attachment
+        self._verifyVITA49Attach(attachments,status,comp_port_name)
+
     def _compareAttach(self,attachments1,attachments2,comp_port_name=""):
         attachmentIDs1 = attachments1.keys()
         self.check(1,len(attachmentIDs1), "%s: Received Correct Number of Attachments on Listener"%(comp_port_name))
@@ -2412,6 +2486,14 @@ class FrontendTunerTests(unittest.TestCase):
         self.check(status['FRONTEND::tuner_status::output_multicast'], sddsStreamDef1.multicastAddress, '%s: Attach multicast Address has correct value'%(comp_port_name))
         self.check(status['FRONTEND::tuner_status::output_vlan'], sddsStreamDef1.vlan, '%s: Attach vlan has correct value'%(comp_port_name))
         self.check(status['FRONTEND::tuner_status::output_port'], sddsStreamDef1.port, '%s: Attach port has correct value'%(comp_port_name))
+
+    def _verifyVITA49Attach(self,attachments,status,comp_port_name=""):
+        self.check(len(attachments),1,"%s: Received Correct Number of Attachments"%(comp_port_name))
+        VITA49StreamDef1 = attachments[0]
+        
+        self.check(status['FRONTEND::tuner_status::output_multicast'], VITA49StreamDef1.ip_address, '%s: Attach multicast Address has correct value'%(comp_port_name))
+        self.check(status['FRONTEND::tuner_status::output_vlan'], VITA49StreamDef1.vlan, '%s: Attach vlan has correct value'%(comp_port_name))
+        self.check(status['FRONTEND::tuner_status::output_port'], VITA49StreamDef1.port, '%s: Attach port has correct value'%(comp_port_name))
 
 
     def _verifySRI(self,sri,status,comp_port_name=""):
