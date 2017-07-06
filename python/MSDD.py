@@ -1210,7 +1210,7 @@ class MSDD_i(MSDD_base):
             if self.frontend_tuner_status[tuner_num].tuner_types.count(value.tuner_type) <= 0:
                 self._log.debug(' Allocation Failed, No tuner of the correct type available')
                 continue 
-            if len(value.rf_flow_id) != 0 and  value.rf_flow_id != self.frontend_tuner_status[tuner_num].rf_flow_id:
+            if len(value.rf_flow_id) != 0 and  value.rf_flow_id != self.device_rf_flow:
                 self._log.debug(' Allocation Failed, rf_flow_ID does not match')
                 continue
             if value.group_id != self.frontend_group_id:
@@ -1375,6 +1375,7 @@ class MSDD_i(MSDD_base):
                 self.frontend_tuner_status[tuner_num].allocation_id_control = value.allocation_id;
                 self.frontend_tuner_status[tuner_num].allocation_id_csv = self.create_allocation_id_csv(self.frontend_tuner_status[tuner_num].allocation_id_control, self.frontend_tuner_status[tuner_num].allocation_id_listeners)
                 self.update_tuner_status([tuner_num])
+                self.frontend_tuner_status[tuner_num].rf_flow_id = self.device_rf_flow
                 self.matchAllocationIdToStreamId(value.allocation_id, value.allocation_id,"dataSDDS_out")
                 self.matchAllocationIdToStreamId(value.allocation_id, value.allocation_id,"dataSDDS_out_PSD")
                 self.matchAllocationIdToStreamId(value.allocation_id, value.allocation_id,"dataSDDS_out_SPC")
@@ -1735,7 +1736,8 @@ class MSDD_i(MSDD_base):
 
     def set_rfinfo_pkt(self,port_name, pkt):
         self.device_rf_info_pkt = pkt
-        self.update_rf_flow_id(pkt.rf_flow_id)
+        self.device_rf_flow = pkt.rf_flow_id
+        #self.update_rf_flow_id(pkt.rf_flow_id)
   
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
