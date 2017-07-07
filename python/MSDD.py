@@ -368,7 +368,7 @@ class MSDD_i(MSDD_base):
                 spc_port = False         
                 #for just analog tuners  
                 if self.frontend_tuner_status[tuner_num].rx_object.is_analog() and not self.frontend_tuner_status[tuner_num].rx_object.is_digital():
-                    self.frontend_tuner_status[tuner_num].center_frequency = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.frequency_hz;
+                    self.frontend_tuner_status[tuner_num].center_frequency = self.convert_if_to_rf(self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.frequency_hz)
                     self.frontend_tuner_status[tuner_num].available_frequency = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.available_frequency_hz
                     self.frontend_tuner_status[tuner_num].gain = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.gain;
                     self.frontend_tuner_status[tuner_num].available_gain = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.available_gain
@@ -392,7 +392,7 @@ class MSDD_i(MSDD_base):
                     self.frontend_tuner_status[tuner_num].available_sample_rate = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_sample_rate
                     self.frontend_tuner_status[tuner_num].bandwidth = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.bandwidth_hz
                     self.frontend_tuner_status[tuner_num].available_bandwidth = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_bandwidth_hz
-                    self.frontend_tuner_status[tuner_num].center_frequency = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.frequency_hz;
+                    self.frontend_tuner_status[tuner_num].center_frequency = self.convert_if_to_rf(self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.frequency_hz)
                     self.frontend_tuner_status[tuner_num].available_frequency = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_frequency_hz       
                     self.frontend_tuner_status[tuner_num].ddc_gain = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.gain
                     self.frontend_tuner_status[tuner_num].complex = True
@@ -411,7 +411,7 @@ class MSDD_i(MSDD_base):
                     self.frontend_tuner_status[tuner_num].available_sample_rate = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_sample_rate
                     self.frontend_tuner_status[tuner_num].bandwidth = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.bandwidth_hz
                     self.frontend_tuner_status[tuner_num].available_bandwidth = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.available_bandwidth_hz
-                    self.frontend_tuner_status[tuner_num].center_frequency = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.frequency_hz;
+                    self.frontend_tuner_status[tuner_num].center_frequency = self.convert_if_to_rf(self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.frequency_hz)
                     self.frontend_tuner_status[tuner_num].available_frequency = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.available_frequency_hz       
                     self.frontend_tuner_status[tuner_num].ddc_gain = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.gain
                     self.frontend_tuner_status[tuner_num].complex = True
@@ -1222,6 +1222,9 @@ class MSDD_i(MSDD_base):
                 self._log.debug(' Allocation Failed, Non-internal allocations can not use internal allocated parents')
                 continue
             
+            # Calculate IF Offset if there is one
+            if_freq = self.convert_rf_to_if(value.center_frequency) 
+            
             ########## LISTENER ALLOCATION - IE - DEVICE CONTROL IS FALSE ##########
             if not value.device_control:
                 if not self.frontend_tuner_status[tuner_num].allocated:
@@ -1262,7 +1265,7 @@ class MSDD_i(MSDD_base):
                             self._log.exception("Error on add_child")
                             return False
                         try:
-                            self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.object.updateRfFrequencyOffset(self.frontend_tuner_status[tuner_num].center_frequency)
+                            self.frontend_tuner_status[from_child_tuner_num].rx_object.digital_rx_object.object.updateRfFrequencyOffset(self.convert_rf_to_if(self.frontend_tuner_status[tuner_num].center_frequency))
                         except:
                             self._log.exception("Error on updateRfFreq " + str(self.frontend_tuner_status[tuner_num].center_frequency))
                             return False                    
@@ -1294,7 +1297,7 @@ class MSDD_i(MSDD_base):
                 
                 if self.frontend_tuner_status[tuner_num].rx_object.is_digital_only(): #Only set center frequency if it does NOT have a corresponding analog receiver
                     try:
-                        valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(value.center_frequency)
+                        valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(if_freq)
                     except:
                         self._log.exception("--- Exception on get_valid_frequency ")
                         success = False
@@ -1334,7 +1337,7 @@ class MSDD_i(MSDD_base):
                 
                 if self.frontend_tuner_status[tuner_num].rx_object.is_analog():
                     valid_sr = 0.0
-                    valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(value.center_frequency)
+                    valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(if_freq)
                     if value.bandwidth != 0:
                         valid_bw = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_bandwidth(value.bandwidth, value.bandwidth_tolerance)
                     else: 
@@ -1345,8 +1348,8 @@ class MSDD_i(MSDD_base):
                 if self.frontend_tuner_status[tuner_num].rx_object.is_spectral_scan() and value.tuner_type == self.FE_TYPE_SPC:
                     #Because it uses the RCV module, use it as part of the validation
                     valid_sr = 0.0
-                    minFreq = (value.center_frequency - value.bandwidth / 2.0) 
-                    maxFreq = (value.center_frequency + value.bandwidth / 2.0) 
+                    minFreq = (if_freq - value.bandwidth / 2.0) 
+                    maxFreq = (if_freq + value.bandwidth / 2.0) 
                     valid_cf_min = self.frontend_tuner_status[tuner_num].rx_object.rx_parent_object.analog_rx_object.object.get_valid_frequency(minFreq)
                     valid_cf_max = self.frontend_tuner_status[tuner_num].rx_object.rx_parent_object.analog_rx_object.object.get_valid_frequency(maxFreq)
                     valid_cf = valid_cf_min and valid_cf_max and maxFreq > minFreq
@@ -1485,7 +1488,42 @@ class MSDD_i(MSDD_base):
         self.frontend_tuner_status[tuner_id].internal_allocation_children = []
         self.frontend_tuner_status[tuner_id].internal_allocation = False
         self.frontend_tuner_status[tuner_id].allocated = False
-          
+
+    def convert_rf_to_if(self,rf_freq):
+        #Convert freq based on RF/IF of Analog Tuner
+        
+        if not(self.device_rf_info_pkt):
+            return rf_freq
+        
+        if self.device_rf_info_pkt.if_center_freq > 0:
+            ifoffset = rf_freq - self.device_rf_info_pkt.rf_center_freq
+            if self.device_rf_info_pkt.spectrum_inverted:
+                if_freq =self.device_rf_info_pkt.if_center_freq-ifoffset
+            else:
+                if_freq =self.device_rf_info_pkt.if_center_freq+ifoffset
+        else:
+            if_freq = rf_freq 
+
+        self._log.debug("Converted RF Freq of %s to IF Freq %s based on Input RF of %s, IF of %s, and spectral inversion %s" %(rf_freq,if_freq,self.device_rf_info_pkt.rf_center_freq,self.device_rf_info_pkt.if_center_freq,self.device_rf_info_pkt.spectrum_inverted))
+        return if_freq         
+    
+    def convert_if_to_rf(self,if_freq):
+        #Convert freq based on RF/IF of Analog Tuner
+        
+        if not(self.device_rf_info_pkt):
+            return if_freq
+        
+        if self.device_rf_info_pkt.if_center_freq > 0:
+            ifoffset = if_freq - self.device_rf_info_pkt.if_center_freq
+            if self.device_rf_info_pkt.spectrum_inverted:
+                rf_freq =self.device_rf_info_pkt.rf_center_freq-ifoffset
+            else:
+                rf_freq =self.device_rf_info_pkt.rf_center_freq+ifoffset
+        else:
+            rf_freq = if_freq 
+
+        self._log.debug("Converted IF Freq of %s to RF Freq %s based on Input RF of %s, IF of %s, and spectral inversion %s" %(if_freq,rf_freq,self.device_rf_info_pkt.rf_center_freq,self.device_rf_info_pkt.if_center_freq,self.device_rf_info_pkt.spectrum_inverted))
+        return rf_freq     
 
     '''
     *************************************************************
@@ -1521,6 +1559,7 @@ class MSDD_i(MSDD_base):
             raise FRONTEND.FrontendException(("ID "+str(allocation_id)+" does not have authorization to modify the tuner"))
         if freq<0: raise FRONTEND.BadParameterException()
         
+        if_freq = self.convert_rf_to_if(freq)
         valid_cf = None
         changed_child_numbers = []
         try:
@@ -1532,17 +1571,17 @@ class MSDD_i(MSDD_base):
                     if not self.frontend_tuner_status[parent_tnr].enabled or \
                         len(self.MSDD.get_child_tuner_num_list(self.frontend_tuner_status[tuner_num].rx_object)) <2: 
                         self.setTunerCenterFrequency(self.frontend_tuner_status[parent_tnr].allocation_id_control, freq)
-                    parent_cf = self.frontend_tuner_status[parent_tnr].center_frequency
+                    parent_cf = self.convert_rf_to_if(self.frontend_tuner_status[parent_tnr].center_frequency)
                     self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.updateRfFrequencyOffset(parent_cf)
-                    valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(freq)
+                    valid_cf = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_frequency(if_freq)
                     if valid_cf is not None:
                         self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setFrequency_Hz(valid_cf)
                         self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.enable = True
                     else:
                         self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.updateRfFrequencyOffset(org_cf_offset)
             if self.frontend_tuner_status[tuner_num].rx_object.is_analog():
-                valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(freq)
-                self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setFrequency_Hz(valid_cf)
+                valid_cf = self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.get_valid_frequency(if_freq)
+                self.frontend_tuner_status[tuner_num].rx_object.analog_rx_object.object.setFrequency_Hz(if_freq)
             if self.frontend_tuner_status[tuner_num].rx_object.is_spectral_scan():
                 startFreq = freq - self.frontend_tuner_status[tuner_num].bandwidth / 2.0
                 stopFreq = freq + self.frontend_tuner_status[tuner_num].bandwidth / 2.0

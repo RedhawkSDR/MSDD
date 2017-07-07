@@ -26,12 +26,12 @@ Model: MSDD-6000
 
 ```
 Report Statistics:
-   Checks that returned "FAIL" .................. 2
+   Checks that returned "FAIL" .................. 3
    Checks that returned "WARN" .................. 34
    Checks that returned "no" .................... 5
-   Checks that returned "ok" .................... 266
+   Checks that returned "ok" .................... 285
    Checks with silent results ................... 38
-   Total checks made ............................ 345
+   Total checks made ............................ 365
 
 ```
 
@@ -44,11 +44,13 @@ Report Statistics:
 '''
 
 ### `error` Details
+dataVITA49_out_PSD: No Attach Sent after connection and Allocation.
+     Cannot continue Test...................................................FAIL
 dataSDDS_out_SPC: No SRI pushed after connection and Allocation. Cannot
      continue Test..........................................................FAIL
 dataSDDS_out_PSD: No SRI pushed after connection and Allocation. Cannot
      continue Test..........................................................FAIL
 
-These two output ports (dataSDDS_out_SPC and dataSDDS_out_PSD) are not the standard data output ports and are custom to the MSDD. The standard data flow tests do not work with. 
+These three output ports (dataVITA49_out_PSD,dataSDDS_out_SPC and dataSDDS_out_PSD) are not the standard data output ports and are custom to the MSDD. The standard data flow tests do not work with them. 
 
 

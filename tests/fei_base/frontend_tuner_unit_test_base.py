@@ -2932,7 +2932,7 @@ class FrontendTunerTests(unittest.TestCase):
         ttype='RX_DIGITIZER'
         #Send an RF Info Packet
         rfInfo_port = self.dut.getPort("RFInfo_in")
-        rf_info_pkt = self._generateRFInfoPkt(rf_freq=10e9)
+        rf_info_pkt = self._generateRFInfoPkt(rf_freq=10e9,if_freq=100e6)
         rfInfo_port._set_rfinfo_pkt(rf_info_pkt)
         controller = generateTunerRequest()
         controller['CF'] = 100e6
