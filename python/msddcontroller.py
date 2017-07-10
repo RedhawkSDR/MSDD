@@ -1263,14 +1263,14 @@ class WBDDCModule(DdcBaseModule):
         return True
         #return (bw == self.MSDD_X000_BANDWIDTH)
     def getBandwidth_Hz(self):
-        if self.sample_rate == 25000000:
+        if (self.sample_rate <= 25000000):
             return self.MSDD_X000_BANDWIDTH
         elif self.sample_rate == 50000000:
             return self.MSDD_X000EX_BANDWIDTH
     def getBandwidthList_Hz(self):
         rv = []
         for rate in DdcBaseModule.getSampleRateList(self):
-            if rate == 25000000.0:
+            if rate <= 25000000.0:
                 rv.append(self.MSDD_X000_BANDWIDTH)
             elif rate == 50000000.0:
                 rv.append(self.MSDD_X000EX_BANDWIDTH)
