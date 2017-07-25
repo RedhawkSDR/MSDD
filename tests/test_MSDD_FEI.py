@@ -288,6 +288,9 @@ dut_config['MSDD'] = {
         ]
     },
     'properties'  : {},
+    
+    
+    # The below capabilities are based on an MSDD-6000 with a freq range from 30 - 6000 MHz. It also assumes a 100 MSPS ADC clock which creates a max SR of 25 MSPS. For MSDD 3000 models the max frequency would need to be adjusted to 3000 MHz. For models that have the 98 MSPS clock (s98 FPGA loads) the max sample rate should be set to 24.576e6. 
     'capabilities': [
         {
             'RX_DIGITIZER': {
