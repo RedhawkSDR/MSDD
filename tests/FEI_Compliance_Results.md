@@ -29,9 +29,9 @@ Report Statistics:
    Checks that returned "FAIL" .................. 3
    Checks that returned "WARN" .................. 34
    Checks that returned "no" .................... 5
-   Checks that returned "ok" .................... 285
+   Checks that returned "ok" .................... 287
    Checks with silent results ................... 38
-   Total checks made ............................ 365
+   Total checks made ............................ 367
 
 ```
 

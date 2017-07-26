@@ -865,6 +865,29 @@ class FrontendTunerTests(unittest.TestCase):
         tAlloc = generateTunerAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s without specifying sample rate (SR=0)'%(ttype))
         
+        self.dut_ref.deallocateCapacity(tAlloc)
+        
+        # With a valid BW and don't care SR it should succeed with no tolerance
+        ttype='RX_DIGITIZER'
+        tuner = generateTunerRequest()
+        tuner['SR'] = float(0.0)
+        tuner['BW_TOLERANCE'] = 0
+        tuner['SR_TOLERANCE'] = 0
+        tAlloc = generateTunerAlloc(tuner)
+        self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s without specifying sample rate (SR=0) with no tolerance'%(ttype))
+        
+        self.dut_ref.deallocateCapacity(tAlloc)
+        
+        # Ask for a bandwidth that is too high, but used as a SR would succeed but should fail 
+        tuner['SR'] = float(0.0)
+        tuner['BW_TOLERANCE'] = 100
+        tuner['SR_TOLERANCE'] = 100
+        high = getMaxBandwidth()
+        tuner['BW'] = float(high * 1.1)
+        tAlloc = generateTunerAlloc(tuner)
+        self.check(self.dut_ref.allocateCapacity(tAlloc), False, 'Allocate %s without specifying sample rate (SR=0) but too much bandwidth'%(ttype))
+           
+    
     def testFRONTEND_3_2_17(self):
         ''' RX_DIG 2.17 allocate below minimum bandwidth capable (succeed)
         '''
