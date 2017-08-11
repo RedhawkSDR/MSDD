@@ -290,7 +290,7 @@ class baseModule(object):
         if not valid and closest_ceil:
             return next_highest_valid
         if not valid:
-            raise Exception("Valid value not found!")
+            raise Exception("Valid value not found! Requested Value was %s" %value)
         
         return val
     
@@ -305,7 +305,7 @@ class baseModule(object):
             if sorted_list[num] > max_tolerance_val:
                 continue
             
-        raise Exception("Valid value not found!")
+        raise Exception("Valid value not found! Requested Value was %s" %value)
         
 #end class baseModule
 

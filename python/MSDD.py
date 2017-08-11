@@ -1174,6 +1174,7 @@ class MSDD_i(MSDD_base):
             for tn in self.dig_tuner_base_nums:
                 reject_allocation = reject_allocation and (self.frontend_tuner_status[tn].allocated and self.frontend_tuner_status[tn].tuner_type == self.FE_TYPE_RXDIG)
             if reject_allocation:
+                self._log.debug("Allocation Failed. Asked for a DDC and all tuners were RX_DIGITIZERS and already allocated")
                 return False
         
         #check allocationID is valid
@@ -1361,6 +1362,7 @@ class MSDD_i(MSDD_base):
                 
                 if valid_cf == None or valid_bw == None or valid_sr == None or not success:
                     self._log.debug("EITHER CENTER FREQUENCY, BANDWIDTH, OR SAMPLE RATE IS INVALID")
+                    self._log.debug("Valid_cf: %s, Valid_bw: %s, Valid_sr: %s, Success: %s" %(valid_cf,valid_bw,valid_sr,success))
                     raise Exception("EITHER CENTER FREQUENCY, BANDWIDTH, OR SAMPLE RATE IS INVALID")
         
                 if internal_allocation_request:
@@ -1401,7 +1403,8 @@ class MSDD_i(MSDD_base):
                    
                 return True
                 
-            except:
+            except Exception,e:
+                    self._log.exception("Failed to allocate: " + str(e))
                     self._log.info("--- FAILED ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
                     continue
         #If got here, than all allocations failed. We can check to see if we can remap a software ddc to a hardware ddc. Currently we 
@@ -1438,8 +1441,9 @@ class MSDD_i(MSDD_base):
             except:
                 if parent_allocated:
                     self.deallocate_frontend_tuner_allocation(parent_allocation)
+                self._log.exception("Allocation Failed. Exception thrown while trying to do an internal allocation") 
                 return False
-        
+        self._log.debug("Allocation Failed. Tried All Available Tuners and none of them have satisfied the request")
         return False                
             
 
