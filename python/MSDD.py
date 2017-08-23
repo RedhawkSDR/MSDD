@@ -1223,6 +1223,11 @@ class MSDD_i(MSDD_base):
                 self._log.debug(' Allocation Failed, Non-internal allocations can not use internal allocated parents')
                 continue
             
+            # Check that RF will fit within RFInfo Setting
+            if not(self.checkRFInfoCenterFrequency(value.center_frequency)):
+                self._log.debug(' Allocation Failed, Requested RF Center Frequency does not fit in RFInfo Frequency Range')
+                continue                
+            
             # Calculate IF Offset if there is one
             if_freq = self.convert_rf_to_if(value.center_frequency) 
             
@@ -1492,6 +1497,17 @@ class MSDD_i(MSDD_base):
         self.frontend_tuner_status[tuner_id].internal_allocation_children = []
         self.frontend_tuner_status[tuner_id].internal_allocation = False
         self.frontend_tuner_status[tuner_id].allocated = False
+
+    def checkRFInfoCenterFrequency(self,rf_freq):
+        if not(self.device_rf_info_pkt):
+            return True
+        #Check that the Requested RF Frequency is within the analog bandwidth of the RFInfo Packet
+        minFreq = self.device_rf_info_pkt.rf_center_freq - self.device_rf_info_pkt.rf_bandwidth/2.0
+        maxFreq = self.device_rf_info_pkt.rf_center_freq + self.device_rf_info_pkt.rf_bandwidth/2.0
+        self._log.debug("Checking Freq against RFInfo Packet. Requested RF: %s minFreq: %s maxFreq: %s" %(rf_freq,minFreq,maxFreq)) 
+        check1 = (rf_freq<maxFreq)
+        check2 = (rf_freq>minFreq)
+        return (check1 and check2)
 
     def convert_rf_to_if(self,rf_freq):
         #Convert freq based on RF/IF of Analog Tuner

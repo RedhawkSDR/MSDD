@@ -2944,6 +2944,148 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate %s with correct RF_Flow_ID check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
         else:
             self.check(True, retval, 'Allocate %s with correct RF_Flow_ID check (returns %s)'%(ttype,retval))
+
+    def testFRONTENDCheckRFwithRFInfo(self):
+        """
+        Tests that when the RFInfo In has an IF and RF set to different values the center frequency requested checks correctly. 
+        """
+        """
+        Tests that when the RFInfo Pkt's flow ID is verified for allocation. 
+        """
+        ttype='RX_DIGITIZER'
+        #Send an RF Info Packet
+        rfInfo_port = self.dut.getPort("RFInfo_in")
+        rf_info_pkt = self._generateRFInfoPkt(rf_freq=10000e6,if_freq=1000e6,rf_bw=100e6)
+        rfInfo_port._set_rfinfo_pkt(rf_info_pkt)
+        controller = generateTunerRequest()
+        controller['CF'] = 10200e6
+        
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(False, retval, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+
+        # Deallocate just in case this successfully allocated.
+        try:
+            self.dut_ref.deallocateCapacity(alloc)
+        except:
+            pass
+
+        # Use a valid CF
+        controller['CF'] = 10010e6
+        
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(True, retval, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+
+        # Deallocate 
+        try:
+            self.dut_ref.deallocateCapacity(alloc)
+        except:
+            pass
+
+        # Use a valid CF
+        controller['CF'] = 10049e6
+        
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(True, retval, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+                
+        # Deallocate 
+        try:
+            self.dut_ref.deallocateCapacity(alloc)
+        except:
+            pass
+        
+        rf_info_pkt = self._generateRFInfoPkt(rf_freq=10000e6,if_freq=1000e6,rf_bw=10e6)
+        rfInfo_port._set_rfinfo_pkt(rf_info_pkt)
+        controller = generateTunerRequest()
+        controller['CF'] = 10200e6
+         
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+ 
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(False, retval, 'Allocate %s with invalid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+ 
+        # Deallocate just in case this successfully allocated.
+        try:
+            self.dut_ref.deallocateCapacity(alloc)
+        except:
+            pass
+ 
+        # Use a valid CF
+        controller['CF'] = 10000e6
+         
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+ 
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(True, retval, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+ 
+        # Deallocate 
+        try:
+            self.dut_ref.deallocateCapacity(alloc)
+        except:
+            pass
+ 
+        # Use a valid CF
+        controller['CF'] = 10004e6
+         
+        # make allocations
+        allocationID = controller['ALLOC_ID']
+        alloc = generateTunerAlloc(controller)
+ 
+        try:
+            retval = self.dut_ref.allocateCapacity(alloc)
+        except CF.Device.InvalidCapacity:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces InvalidCapcity exception should return False)'%(ttype))
+        except Exception, e:
+            self.check(False, True, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
+        else:
+            self.check(True, retval, 'Allocate %s with valid CF based on RF_Info_Packet CF and BW check (returns %s)'%(ttype,retval))
+                 
+            
             
     def testFRONTENDRFtoIFConversion(self):
         """
