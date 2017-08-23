@@ -1634,6 +1634,7 @@ class MSDD_i(MSDD_base):
                 self._log.warn("PROBLEM: %s"%e)
         except:
             error_string = "Error setting center frequency to " + str(freq) + " for tuner " + str(tuner_num)
+            self._log.exception(error_string)
             raise FRONTEND.BadParameterException(error_string)
         finally:
             self.update_tuner_status([tuner_num]+changed_child_numbers)
@@ -1677,7 +1678,7 @@ class MSDD_i(MSDD_base):
         except Exception, e:
             self._log.warning(str(e))
             error_string = "Error setting bandwidth to " + str(bw) + " for tuner " + str(tuner_num)
-            self._log.warning(error_string)
+            self._log.exception(error_string)
             raise FRONTEND.BadParameterException(error_string)
         self.update_tuner_status([tuner_num])
 
@@ -1711,6 +1712,7 @@ class MSDD_i(MSDD_base):
                 raise Exception("")
         except:
             error_string = "Error setting gain to " + str(gain) + " for tuner " + str(tuner_num)
+            self._log.exception(error_string)
             raise FRONTEND.BadParameterException(error_string)
         self.update_tuner_status([tuner_num])
 
@@ -1770,7 +1772,7 @@ class MSDD_i(MSDD_base):
         except Exception, e:
             error_string = "Error setting sr to " + str(sr) + " for tuner " + str(tuner_num)
             self._log.error(error_string)
-            self._log.error(str(e))
+            self._log.exception(str(e))
             raise FRONTEND.BadParameterException(error_string)
         self.update_tuner_status([tuner_num])
 
