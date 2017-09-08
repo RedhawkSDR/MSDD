@@ -651,13 +651,13 @@ and comprise it unless you looking for the strongest signal.</description>
     </simple>
     <configurationkind kindtype="property"/>
   </struct>
-  <struct id="FRONTEND::listener_allocation" name="frontend_listener_allocation">
+  <struct id="FRONTEND::listener_allocation" mode="writeonly" name="frontend_listener_allocation">
     <description>Frontend Interfaces v2 listener allocation structure</description>
     <simple id="FRONTEND::listener_allocation::existing_allocation_id" type="string"/>
     <simple id="FRONTEND::listener_allocation::listener_allocation_id" type="string"/>
     <configurationkind kindtype="allocation"/>
   </struct>
-  <struct id="FRONTEND::tuner_allocation" name="frontend_tuner_allocation">
+  <struct id="FRONTEND::tuner_allocation" mode="writeonly" name="frontend_tuner_allocation">
     <description>Frontend Interfaces v2 main allocation structure</description>
     <simple id="FRONTEND::tuner_allocation::tuner_type" name="tuner_type" type="string">
       <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>

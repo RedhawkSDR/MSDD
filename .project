@@ -15,5 +15,6 @@
 		<nature>org.python.pydev.pythonNature</nature>
 		<nature>gov.redhawk.ide.natures.scaproject</nature>
 		<nature>gov.redhawk.ide.natures.sca.component</nature>
+		<nature>gov.redhawk.ide.codgen.natures.frontend</nature>
 	</natures>
 </projectDescription>
