@@ -3138,7 +3138,30 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(True, retval, 'Allocate %s with valid CF based on RF_Info_Packet check (returns %s)'%(ttype,retval))
         
 
+    def testFRONTENDAllocationPropertiesWriteOnly(self):
+        
+        tuner_allocation = CF.DataType(id='FRONTEND::tuner_allocation',value=any.to_any(None))
+        listener_allocation = CF.DataType(id='FRONTEND::listener_allocation',value=any.to_any(None))
 
+        #result = self.dut_ref.query([tuner_allocation])
+        
+        try:
+            result = self.dut_ref.query([tuner_allocation])
+        except CF.UnknownProperties:
+            self.check(True, True, 'Query of Tuner Allocation Property throws expected exception')
+        except Exception, e:
+            self.check(False, True, 'Query of Tuner Allocation Property throws unexpected exception')
+        else:
+            self.check(False, True, 'Query of Tuner Allocation Property does not throw expected exception')
+
+        try:
+            result = self.dut_ref.query([listener_allocation])
+        except CF.UnknownProperties:
+            self.check(True, True, 'Query of Listener Allocation Property throws expected exception')
+        except Exception, e:
+            self.check(False, True, 'Query of Listener Allocation Property throws unexpected exception')
+        else:
+            self.check(False, True, 'Query of Listener Allocation Property does not throw expected exception')
 
     def _generateRFInfoPkt(self,rf_freq=1e9,rf_bw=1e9,if_freq=0,spec_inverted=False,rf_flow_id="testflowID"):
         antenna_info = FRONTEND.AntennaInfo("antenna_name","antenna_type","antenna.size","description")
