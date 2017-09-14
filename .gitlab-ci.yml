@@ -38,6 +38,43 @@ before_script:
       - output/*/*.rpm
     expire_in: 2 days
 
+.test: &test
+  image: ${docker_registry}redhawk/buildenv:${short_version}-$dist-$arch
+  stage: test
+  tags:
+    - msdd
+  when: manual
+  dependencies: []
+  script:
+    - . /usr/local/redhawk/python-virtualenv/bin/activate
+    - yum-config-manager --add-repo $redhawk_repo
+    - touch /var/lib/rpm/* && yum-builddep --nogpgcheck -y ${namespace}$CI_PROJECT_NAME.spec
+    - source /etc/profile.d/redhawk.sh
+    - export SDRROOT=/var/redhawk/sdr
+    - if [ -d cpp ] && [ "${dist}" == "el7" ]; then
+        export CXXFLAGS='-g -Og -fprofile-arcs -ftest-coverage' V=1;
+      fi
+    - ./build.sh
+    - cd tests
+    - env | tee -a ../$CI_PROJECT_NAME-$CI_COMMIT_SHA-tests.log
+    - pip list | tee -a ../$CI_PROJECT_NAME-$CI_COMMIT_SHA-tests.log
+    - python test_MSDD.py 2>&1 | tee -a ../$CI_PROJECT_NAME-$CI_COMMIT_SHA-tests.log
+    - python test_MSDD_FEI.py 2>&1 | tee -a ../$CI_PROJECT_NAME-$CI_COMMIT_SHA-tests.log
+    - cd ..
+    - if [ -d cpp ]; then
+        gcovr -r . --xml --exclude-directories=tests > gcovr.xml;
+        cppcheck --enable=all --xml-version=2 -i tests . 2> cppcheck-results.xml;
+      fi
+    - find * -name '*.cpp' -o -name '*.h' -o -name '*.xml' -o -name '*.py' -o -name '*.java' -o -name '*.log' | tar czvf $CI_PROJECT_DIR/output.tar.gz --files-from -
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/output.tar.gz
+    expire_in: 2 days
+  #Skip on tag of following format
+  except:
+    - /^(\d+\.)?(\d+)?(\.\d+)$/
+
+
 package:el6:rh2.1:
   variables:
     latest_version: 2.1-nightly
@@ -64,6 +101,33 @@ package:el7:rh2.1:
     dist: el7
     arch: x86_64
   <<: *package
+
+test:el6:rh2.1:
+  variables:
+    latest_version: 2.1-nightly
+    release_version: $rh_21_release
+    short_version: '2.1'
+    dist: el6
+    arch: x86_64
+  <<: *test
+
+test:el6-i386:rh2.1:
+  variables:
+    latest_version: 2.1-nightly
+    release_version: $rh_21_release
+    short_version: '2.1'
+    dist: el6
+    arch: i686
+  <<: *test
+
+test:el7:rh2.1:
+  variables:
+    latest_version: 2.1-nightly
+    release_version: $rh_21_release
+    short_version: '2.1'
+    dist: el7
+    arch: x86_64
+  <<: *test
 
 deploy:
   image: centos:7
