@@ -1,5 +1,5 @@
 variables:
-  rh_21_release: '2.1.1'
+  rh_21_release: '2.1.2'
   namespace: rh.
 
 #Global before script, determine if this is a tag and handle rpm release field accordingly
@@ -40,6 +40,7 @@ before_script:
   #Skip on tag of following format
   except:
     - /^(\d+\.)?(\d+)?(\.\d+)$/
+    - master
 
 .test: &test
   image: ${docker_registry}redhawk/buildenv:${short_version}-$dist-$arch
@@ -76,6 +77,7 @@ before_script:
   #Skip on tag of following format
   except:
     - /^(\d+\.)?(\d+)?(\.\d+)$/
+    - master
 
 package:el6:rh2.1:
   variables:
@@ -144,3 +146,4 @@ deploy:
   #Skip on tag of following format
   except:
     - /^(\d+\.)?(\d+)?(\.\d+)$/
+    - master
