@@ -1157,7 +1157,7 @@ class MSDD_i(MSDD_base):
         return True
 
     
-    def allocate_frontend_tuner_allocation(self, value, from_child_tuner_num = None, retry_tuner_num = None):
+    def _allocate_frontend_tuner_allocation(self, value, from_child_tuner_num = None, retry_tuner_num = None):
         
         self._log.trace( "Received a tuner allocation, contents:"+str(value))
         internal_allocation_request = (from_child_tuner_num != None)
@@ -1398,7 +1398,10 @@ class MSDD_i(MSDD_base):
                     self.sendAttach(self.frontend_tuner_status[tuner_num].allocation_id_control, tuner_num)
 
                 self._log.info("--- SUCCESSFUL ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
-                
+
+                if len(self.msdd_block_output_configuration)==0 and len(self.msdd_output_configuration)==0:
+                    self._log.info("Tuner Allocated but not output is currently setup. No data will be output until output is configured")
+
                 if self.pending_fft_registrations.count(self.frontend_tuner_status[tuner_num].allocation_id_control) > 0:
                     self.register_fft_connection(self.frontend_tuner_status[tuner_num].allocation_id_control)
                     
