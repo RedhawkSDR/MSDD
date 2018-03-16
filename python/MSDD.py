@@ -27,7 +27,6 @@ from ossie.cf import ExtendedCF
 from omniORB import CORBA
 import struct #@UnresolvedImport
 from bulkio.bulkioInterfaces import BULKIO, BULKIO__POA #@UnusedImport
-from bulkio.bulkio_compat import *
 # End of update_project insertions
 
 from ossie.device import start_device
