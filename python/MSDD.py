@@ -1253,7 +1253,7 @@ class MSDD_i(MSDD_base):
                 listenerallocation.existing_allocation_id = self.frontend_tuner_status[tuner_num].allocation_id_control
                 listenerallocation.listener_allocation_id = value.allocation_id
                 try:
-                    retval =  self.allocate_frontend_listener_allocation(listenerallocation)
+                    retval =  self._allocate_frontend_listener_allocation(listenerallocation)
                 except:
                     self._log.exception("Could not allocation Listener")
                     return False
@@ -1324,8 +1324,8 @@ class MSDD_i(MSDD_base):
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setEnable(True)
                        
-                    elif value.sample_rate==0 and value.bandwidth!=0: #specify only BW so use it for requested SR scaled up by 20% bandwidth efficiency
-                        valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(value.bandwidth*1.25, value.bandwidth_tolerance)
+                    elif value.sample_rate==0 and value.bandwidth!=0: #specify only BW so use it for requested SR with a large tolerance because sample rate is 'don't care'
+                        valid_sr = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_sample_rate(value.bandwidth, 100)
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setSampleRate(valid_sr)
                         valid_bw = self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.get_valid_bandwidth(value.bandwidth, value.bandwidth_tolerance)
                         success &= self.frontend_tuner_status[tuner_num].rx_object.digital_rx_object.object.setBandwidth_Hz(valid_bw)
@@ -1432,16 +1432,16 @@ class MSDD_i(MSDD_base):
             parent_allocated = False
             try:
                 self._log.trace("--- ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS LISTENER (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
-                parent_allocated = self.allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
+                parent_allocated = self._allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
                 if not parent_allocated:
                     parent_allocation.device_control = True
                     self._log.trace("--- 2ATTEMPTING PARENT SOFTWARE REMAP ALLOCATION REQUREST AS CONTROL (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
-                    parent_allocated = self.allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
+                    parent_allocated = self._allocate_frontend_tuner_allocation(parent_allocation,sw_tuner_num,None)
                 if not parent_allocated:
                     raise Exception("PARENT COULD NOT BE ALLOCATED")
                 self._log.trace("--- ATTEMPTING SW TUNER SOFTWARE REMAP ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(sw_tuner_num) + " WITH CONFIG: " + str(parent_allocation))
 
-                tuner_allocated = self.allocate_frontend_tuner_allocation(value,None,sw_tuner_num)
+                tuner_allocated = self._allocate_frontend_tuner_allocation(value,None,sw_tuner_num)
                 if not tuner_allocated:
                     raise Exception("SW TUNER COULD NOT BE ALLOCATED")
                 return True
