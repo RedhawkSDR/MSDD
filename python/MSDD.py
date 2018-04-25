@@ -35,7 +35,7 @@ import copy
 
 from MSDD_base import * 
 from frontend.fe_types import *
-
+from frontend.tuner_device import validateRequestVsRFInfo
 # additional imports
 import copy, math, sys
 from pprint import pprint as pp
@@ -1223,9 +1223,13 @@ class MSDD_i(MSDD_base):
                 continue
             
             # Check that RF will fit within RFInfo Setting
-            if not(self.checkRFInfoCenterFrequency(value.center_frequency)):
-                self._log.debug(' Allocation Failed, Requested RF Center Frequency does not fit in RFInfo Frequency Range')
-                continue                
+            if self.device_rf_info_pkt:
+                try:
+                    validateRequestVsRFInfo(value,self.device_rf_info_pkt,1)
+                except FRONTEND.BadParameterException , e:
+                    self._log.info("ValidateRequestVsRFInfo Failed: %s" %(str(e)))
+                    continue
+            
             
             # Calculate IF Offset if there is one
             if_freq = self.convert_rf_to_if(value.center_frequency) 
