@@ -136,7 +136,7 @@ test:el7:rh2.1:
   <<: *test
 
 deploy:
-  image: centos:7
+  image: ${docker_registry}centos:7
   stage: deploy
   dependencies: []
   before_script:
