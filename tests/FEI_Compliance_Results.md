@@ -44,12 +44,14 @@ Report Statistics:
 '''
 
 ### `error` Details
+```
 dataVITA49_out_PSD: No Attach Sent after connection and Allocation.
      Cannot continue Test...................................................FAIL
 dataSDDS_out_SPC: No SRI pushed after connection and Allocation. Cannot
      continue Test..........................................................FAIL
 dataSDDS_out_PSD: No SRI pushed after connection and Allocation. Cannot
      continue Test..........................................................FAIL
+```
 
 These three output ports (dataVITA49_out_PSD,dataSDDS_out_SPC and dataSDDS_out_PSD) are not the standard data output ports and are custom to the MSDD. The standard data flow tests do not work with them. 
 
