@@ -35,20 +35,13 @@ dut_config = {}
       device under test.
   4)  Set DEBUG_LEVEL, DUT_*, or MCAST_* if desired and applicable.
   5)  Advanced: Override functions with device specific behavior.
-
-  NOTE: When testing the USRP_UHD it is possible for the test to freeze due to
-        saturating the network connection to the USRP hardware. This is
-        is especially true when testing using a virtual machine. To avoid this,
-        set the `sr_limit` key in the dut_config struct to the maximum sample
-        rate the test should attempt. This must be a valid sample rate for the
-        DUT.
 '''
 
 #******* MODIFY CONFIG BELOW **********#
 DUT = 'MSDD'
 
 # Optional:
-DEBUG_LEVEL = 4    # typical values include 0, 1, 2, 3, 4 and 5
+DEBUG_LEVEL = 3    # typical values include 0, 1, 2, 3, 4 and 5
 DUT_INDEX = None
 DUT_IP_ADDR = "192.168.103.250"
 DUT_PORT = None
@@ -220,9 +213,6 @@ dut_config['RTL|FC13']['capabilities'][0]['RX_DIGITIZER']['CF'] = [22e6, 948.6e6
 dut_config['RTL|FC2580'] = copy.deepcopy(dut_config['RTL|FC13'])
 dut_config['RTL|FC2580']['capabilities'][0]['RX_DIGITIZER']['CF'] = [146e6, 308e6, 438e6, 924e6] # gap from 308 to 438 MHz
 
-
-
-
 # rh.MSDD
 dut_config['MSDD'] = {
     'spd'         : '../MSDD.spd.xml',
@@ -289,8 +279,10 @@ dut_config['MSDD'] = {
     },
     'properties'  : {},
     
-    
-    # The below capabilities are based on an MSDD-6000 with a freq range from 30 - 6000 MHz. It also assumes a 100 MSPS ADC clock which creates a max SR of 25 MSPS. For MSDD 3000 models the max frequency would need to be adjusted to 3000 MHz. For models that have the 98 MSPS clock (s98 FPGA loads) the max sample rate should be set to 24.576e6. 
+    # The below capabilities are based on an MSDD-6000 with a freq range from 30 - 6000 MHz. It also
+    # assumes a 100 MSPS ADC clock which creates a max SR of 25 MSPS. For MSDD 3000 models the max
+    # frequency would need to be adjusted to 3000 MHz. For models that have the 98 MSPS clock
+    # (s98 FPGA loads) the max sample rate should be set to 24.576e6. 
     'capabilities': [
         {
             'RX_DIGITIZER': {
@@ -305,7 +297,7 @@ dut_config['MSDD'] = {
                 'CF'      : [30e6, 6e9],
                 'BW'      : [20e6, 20e6],
                 'SR'      : [25e6, 25e6],
-                'GAIN'    : [-48.0, 12.0]
+
             },
             'DDC': {
                 'COMPLEX' : True,
@@ -318,6 +310,139 @@ dut_config['MSDD'] = {
         }
     ]
 }
+
+# rh.MSDD 6000
+dut_config['MSDD|6000'] = dut_config['MSDD']
+
+# rh.MSDD 6000 s100
+dut_config['MSDD|6000|s100'] = dut_config['MSDD']
+
+# rh.MSDD 6000 s98
+dut_config['MSDD|6000|s98'] = copy.deepcopy(dut_config['MSDD|6000'])
+dut_config['MSDD|6000|s98']['capabilities'] = [
+        {
+            'RX_DIGITIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 6e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [24.576e6, 24.576e6],
+                'GAIN'    : [-48.0, 12.0]
+            },
+            'RX_DIGITIZER_CHANNELIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 6e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [24.576e6, 24.576e6],
+            },
+            'DDC': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 6e9],
+                'BW'      : [80e3, 80e3],
+                'SR'      : [100e3, 100e3],
+                'GAIN'    : [-48.0, 12.0],
+                'NUMDDCs' : 16,
+            }
+        }
+    ]
+
+# rh.MSDD 3000 (with additional output configuration entries)
+dut_config['MSDD|3000'] = copy.deepcopy(dut_config['MSDD'])
+dut_config['MSDD|3000']['configure']['msdd_output_configuration'].extend(
+        [
+            {
+                'msdd_output_configuration::tuner_number'    : 4,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'4',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+            {
+                'msdd_output_configuration::tuner_number'    : 5,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'5',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+            {
+                'msdd_output_configuration::tuner_number'    : 6,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'6',
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            },
+        ]
+    )
+dut_config['MSDD|3000']['capabilities'] = [
+        {
+            'RX_DIGITIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [25e6, 25e6],
+                'GAIN'    : [-48.0, 12.0]
+            },
+            'RX_DIGITIZER_CHANNELIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [25e6, 25e6],
+            },
+            'DDC': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [80e3, 80e3],
+                'SR'      : [100e3, 100e3],
+                'GAIN'    : [-48.0, 12.0],
+                'NUMDDCs' : 16,
+            }
+        }
+    ]
+
+# rh.MSDD 3000 s100
+dut_config['MSDD|3000|s100'] = dut_config['MSDD|3000']
+
+# rh.MSDD 3000 s98
+dut_config['MSDD|3000|s98'] = copy.deepcopy(dut_config['MSDD|3000'])
+dut_config['MSDD|3000|s98']['capabilities'] = [
+        {
+            'RX_DIGITIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [24.576e6, 24.576e6],
+                'GAIN'    : [-48.0, 12.0]
+            },
+            'RX_DIGITIZER_CHANNELIZER': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [20e6, 20e6],
+                'SR'      : [24.576e6, 24.576e6],
+            },
+            'DDC': {
+                'COMPLEX' : True,
+                'CF'      : [30e6, 3e9],
+                'BW'      : [80e3, 80e3],
+                'SR'      : [100e3, 100e3],
+                'GAIN'    : [-48.0, 12.0],
+                'NUMDDCs' : 16,
+            }
+        }
+    ]
 
 # rh.MSDD_RX_Device
 dut_config['MSDD|Dreamin'] = {
@@ -351,8 +476,6 @@ dut_config['MSDD|Dreamin'] = {
         }
     ]
 }
-
-# TODO - add configs for MSDD3000 vs MSDD6000
 
 ########################################
 #    END Pre-defined Configurations    #
