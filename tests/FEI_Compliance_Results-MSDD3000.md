@@ -50,7 +50,7 @@ optional field was not used.
 * `silent results` are checks that passed but do not appear anywhere in the output unless they fail.
 '''
 
-### `error` Details
+### `FAIL` Details
 ```
 testFRONTEND_3_4_DataFlow1: dataVITA49_out_PSD: No Attach Sent after
      connection and Allocation. Cannot continue Test........................FAIL
@@ -64,4 +64,12 @@ These three output ports (`dataVITA49_out_PSD`, `dataSDDS_out_SPC` and `dataSDDS
 the standard data output ports and are custom to the MSDD. The standard data flow tests do not work
 with them. 
 
+### `ERROR` Details
 
+In addition to creating a human readable summary, the compliance test raises an `AssertionError` when tests fail to allow automated testing and test reporting. Due to the `FAIL`s mentioned above, the following associated `ERROR`s are reported.
+
+```
+ERROR: RX_DIG 4 DataFlow - First Port
+ERROR: RX_DIG 4 DataFlow - Second Port
+ERROR: RX_DIG 4 DataFlow - Third Port
+```
