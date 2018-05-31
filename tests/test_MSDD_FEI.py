@@ -214,6 +214,7 @@ dut_config['RTL|FC2580'] = copy.deepcopy(dut_config['RTL|FC13'])
 dut_config['RTL|FC2580']['capabilities'][0]['RX_DIGITIZER']['CF'] = [146e6, 308e6, 438e6, 924e6] # gap from 308 to 438 MHz
 
 # rh.MSDD
+NUM_OUTPUT_CONFIGS = 7 # it is ok if this is more than needed, but increase if more are needed for FPGA load/DDCs
 dut_config['MSDD'] = {
     'spd'         : '../MSDD.spd.xml',
     'parent_dir'  : None,
@@ -238,43 +239,7 @@ dut_config['MSDD'] = {
                 'msdd_output_configuration::endianess'       : 1,
                 'msdd_output_configuration::mfp_flush'       : 63,
                 'msdd_output_configuration::vlan_enable'     : False                        
-            },
-            {
-                'msdd_output_configuration::tuner_number'    : 1,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'1',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            },
-            {
-                'msdd_output_configuration::tuner_number'    : 2,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'2',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            },
-            {
-                'msdd_output_configuration::tuner_number'    : 3,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'3',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            }
+            } # more added below
         ]
     },
     'properties'  : {},
@@ -297,7 +262,6 @@ dut_config['MSDD'] = {
                 'CF'      : [30e6, 6e9],
                 'BW'      : [20e6, 20e6],
                 'SR'      : [25e6, 25e6],
-
             },
             'DDC': {
                 'COMPLEX' : True,
@@ -310,6 +274,24 @@ dut_config['MSDD'] = {
         }
     ]
 }
+mcast_start_addr = MCAST_GROUP or '234.0.0.100'
+mcast_octets = [int(x) for x in mcast_start_addr.split('.')]
+for i in xrange(1,NUM_OUTPUT_CONFIGS):
+    mcast_octets[-1] += 1
+    dut_config['MSDD']['configure']['msdd_output_configuration'].append(
+            {
+                'msdd_output_configuration::tuner_number'    : i,
+                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
+                'msdd_output_configuration::ip_address'      : '.'.join(str(x) for x in mcast_octets),
+                'msdd_output_configuration::port'            : MCAST_PORT or 0,
+                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
+                'msdd_output_configuration::enabled'         : True,
+                'msdd_output_configuration::timestamp_offset': 0,
+                'msdd_output_configuration::endianess'       : 1,
+                'msdd_output_configuration::mfp_flush'       : 63,
+                'msdd_output_configuration::vlan_enable'     : False                        
+            }
+    )
 
 # rh.MSDD 6000
 dut_config['MSDD|6000'] = dut_config['MSDD']
@@ -345,48 +327,8 @@ dut_config['MSDD|6000|s98']['capabilities'] = [
         }
     ]
 
-# rh.MSDD 3000 (with additional output configuration entries)
+# rh.MSDD 3000
 dut_config['MSDD|3000'] = copy.deepcopy(dut_config['MSDD'])
-dut_config['MSDD|3000']['configure']['msdd_output_configuration'].extend(
-        [
-            {
-                'msdd_output_configuration::tuner_number'    : 4,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'4',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            },
-            {
-                'msdd_output_configuration::tuner_number'    : 5,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'5',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            },
-            {
-                'msdd_output_configuration::tuner_number'    : 6,
-                'msdd_output_configuration::protocol'        : 'UDP_SDDS',
-                'msdd_output_configuration::ip_address'      : MCAST_GROUP[:-1] +'6',
-                'msdd_output_configuration::port'            : MCAST_PORT or 0,
-                'msdd_output_configuration::vlan'            : MCAST_VLAN or 0,
-                'msdd_output_configuration::enabled'         : True,
-                'msdd_output_configuration::timestamp_offset': 0,
-                'msdd_output_configuration::endianess'       : 1,
-                'msdd_output_configuration::mfp_flush'       : 63,
-                'msdd_output_configuration::vlan_enable'     : False                        
-            },
-        ]
-    )
 dut_config['MSDD|3000']['capabilities'] = [
         {
             'RX_DIGITIZER': {
