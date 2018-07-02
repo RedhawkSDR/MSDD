@@ -1403,7 +1403,7 @@ class MSDD_i(MSDD_base):
                 self._log.info("--- SUCCESSFUL ALLOCATION REQUREST  (INTERNAL=" + str(internal_allocation_request) + ") ON TUNER: " + str(tuner_num) + " WITH CONFIG: " + str(value))
 
                 if len(self.msdd_block_output_configuration)==0 and len(self.msdd_output_configuration)==0:
-                    self._log.info("Tuner Allocated but not output is currently setup. No data will be output until output is configured")
+                    self._log.info("Tuner Allocated but the output is not currently setup. No data will be output until the output is configured")
 
                 if self.pending_fft_registrations.count(self.frontend_tuner_status[tuner_num].allocation_id_control) > 0:
                     self.register_fft_connection(self.frontend_tuner_status[tuner_num].allocation_id_control)
