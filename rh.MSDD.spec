@@ -31,7 +31,7 @@ Prefix:         %{_prefix}
 
 Name:           rh.MSDD
 Version:        3.0.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Device %{name}
 
 Group:          REDHAWK/Devices
